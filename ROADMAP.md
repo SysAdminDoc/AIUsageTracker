@@ -6,7 +6,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 - 🤖 **Reset history view** — in-app panel/tab listing past resets from `reset_events.jsonl` with per-window filtering.
 - 🤖 **Frameless always-on-top widget mode** — compact desktop widget variant (drag-to-move, opacity, remembers position) in addition to the full window.
-- 🤖 **Per-window warn thresholds** — currently a single global `warn_toast_at`; allow a custom threshold per usage bar next to its alarm toggle.
 - 🤖 **Custom alarm sound file** — let users point at their own `.wav` in addition to the six built-in tones.
 - 🤖 **Focus rings / keyboard-nav pass** — CTk focus visibility is minimal; add visible focus states and verify tab order for accessibility.
 - 🤖 **ccusage-style token/cost view** — read local `~/.claude/projects/**/*.jsonl` and `~/.codex/state_5.sqlite` for token/cost totals to complement the account-window view.

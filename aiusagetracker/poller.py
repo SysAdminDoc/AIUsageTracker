@@ -127,8 +127,8 @@ class Poller:
             storage.export_status(window_data)
 
         # Warn on high utilization (once per period until it resets).
-        warn_at = float(self.settings.get("warn_toast_at", 90))
         for w in collected:
+            warn_at = config.window_warn_threshold(self.settings, w.key)
             if w.utilization >= warn_at and w.key not in self._warned:
                 self._warned.add(w.key)
                 if self.on_warn:

@@ -58,6 +58,8 @@ DEFAULT_SETTINGS = {
     "theme": DEFAULT_THEME,
     # Per-window alarm opt-out, keyed by LimitWindow.key. Missing key => True.
     "window_alarms": {},
+    # Per-window warn threshold overrides. Missing key => uses global warn_toast_at.
+    "window_thresholds": {},
     # Event hooks: shell commands executed on reset/threshold. Empty = disabled.
     "on_reset_command": "",
     "on_threshold_command": "",
@@ -70,6 +72,14 @@ DEFAULT_SETTINGS = {
 
 def window_alarm_enabled(settings: dict, key: str) -> bool:
     return bool(settings.get("window_alarms", {}).get(key, True))
+
+
+def window_warn_threshold(settings: dict, key: str) -> float:
+    """Get the warning threshold for a specific window, falling back to global."""
+    override = settings.get("window_thresholds", {}).get(key)
+    if override is not None:
+        return float(override)
+    return float(settings.get("warn_toast_at", 90))
 
 
 def normalize_theme(value) -> str:
