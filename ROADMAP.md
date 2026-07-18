@@ -8,7 +8,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 - 🤖 **Frameless always-on-top widget mode** — compact desktop widget variant (drag-to-move, opacity, remembers position) in addition to the full window.
 - 🤖 **Per-window warn thresholds** — currently a single global `warn_toast_at`; allow a custom threshold per usage bar next to its alarm toggle.
 - 🤖 **Custom alarm sound file** — let users point at their own `.wav` in addition to the six built-in tones.
-- 🤖 **Autostart on login** — optional Startup-folder / HKCU Run entry toggle in Settings.
 - 🤖 **Focus rings / keyboard-nav pass** — CTk focus visibility is minimal; add visible focus states and verify tab order for accessibility.
 - 🤖 **Snooze / one-window acknowledge** — acknowledge a single window's alarm without silencing others.
 - 🤖 **Source health check** — surface a warning when an endpoint stops returning a valid `resets_at` (schema drift early-warning), per the research note.

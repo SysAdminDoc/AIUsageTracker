@@ -100,6 +100,64 @@ def save_settings(settings: dict) -> None:
         pass
 
 
+def _startup_path() -> Path:
+    """Windows Startup folder shortcut path for autostart."""
+    startup = Path(os.environ.get("APPDATA", "")) / r"Microsoft\Windows\Start Menu\Programs\Startup"
+    return startup / "AIUsageTracker.lnk"
+
+
+def set_autostart(enabled: bool) -> None:
+    """Create or remove a Startup folder shortcut."""
+    lnk = _startup_path()
+    if not enabled:
+        try:
+            lnk.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return
+    try:
+        import sys
+        target = sys.executable
+        if getattr(sys, "frozen", False):
+            target = sys.executable
+        else:
+            target = str(Path(sys.executable).parent / "pythonw.exe")
+        import ctypes.wintypes
+        from ctypes import POINTER, byref, windll
+        CoInitialize = windll.ole32.CoInitialize
+        CoCreateInstance = windll.ole32.CoCreateInstance
+        CoInitialize(None)
+
+        import winreg
+        lnk.parent.mkdir(parents=True, exist_ok=True)
+        _write_shortcut_via_ps(str(lnk), target)
+    except Exception:
+        pass
+
+
+def _write_shortcut_via_ps(lnk_path: str, target: str) -> None:
+    """Create a .lnk shortcut using PowerShell COM (simplest reliable method)."""
+    import sys
+    if getattr(sys, "frozen", False):
+        args = ""
+    else:
+        args = f'-m aiusagetracker'
+    ps = (
+        f'$ws = New-Object -ComObject WScript.Shell; '
+        f'$s = $ws.CreateShortcut("{lnk_path}"); '
+        f'$s.TargetPath = "{target}"; '
+        f'$s.Arguments = "{args}"; '
+        f'$s.Save()'
+    )
+    subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                   capture_output=True, timeout=10)
+
+
+def get_autostart() -> bool:
+    """Check if the autostart shortcut exists."""
+    return _startup_path().exists()
+
+
 def run_hook(command: str, env_vars: dict[str, str]) -> None:
     """Execute a user-configured event hook command with environment context."""
     if not command or not command.strip():
