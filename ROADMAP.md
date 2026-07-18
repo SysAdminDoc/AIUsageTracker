@@ -50,13 +50,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: User can add multiple credential file paths in Settings; each account appears as a separate provider card.
   Complexity: L
 
-- [ ] P2 — **Data freshness indicator**
-  Why: Users need to trust the displayed data is current, not stale from a failed poll. "Last polled: 47s ago" or a pulse animation builds confidence.
-  Evidence: Azure quota dashboards show last-updated timestamps; Vercel shows "refreshed X ago"; real-time dashboard UX best practices.
-  Touches: `gui/app.py` (add "Last updated Xs ago" to topbar or each ProviderCard; subtle pulse animation on successful poll)
-  Acceptance: Dashboard shows relative time since last successful poll; stale data (>2x poll interval) shows a warning badge.
-  Complexity: S
-
 - [ ] P3 — **Calendar heatmap in Activity view**
   Why: Reveals daily/weekly usage patterns (which hours are heavy, which days hit limits). GitHub-style contribution graphs are universally understood.
   Evidence: GitHub contribution heatmap; tokscale 2D contributions graph; data visualization best practices.

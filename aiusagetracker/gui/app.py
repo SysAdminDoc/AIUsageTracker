@@ -397,6 +397,7 @@ class App(ctk.CTk):
         self._burn_samples: dict[str, deque] = {}  # key -> deque of (timestamp, pct)
         self._pending_resets: list[ResetEvent] = []
         self._reset_debounce_id = None
+        self._last_sync_ts: float | None = None
         self._view = "dashboard"
         self._settings_dialog = None
         self._refresh_pending: set[str] = set()
@@ -740,8 +741,9 @@ class App(ctk.CTk):
 
         times = [s.fetched_at for s in snaps.values() if s.ok]
         if times:
+            self._last_sync_ts = max(t.timestamp() for t in times)
+            self._update_freshness()
             latest = max(times).astimezone()
-            self.synced_label.configure(text=f"Last synced {latest:%I:%M:%S %p}  ·  every {self.settings['poll_seconds']}s")
             self.conn_detail.configure(text=f"Synced {latest:%I:%M:%S %p}")
         self._render_recent()
 
@@ -825,6 +827,26 @@ class App(ctk.CTk):
             notify("Usage nearing limit",
                    f"{PROVIDER_TITLES.get(w.provider, w.provider)} {w.label} at {w.utilization:.0f}%")
 
+    def _update_freshness(self):
+        if self._last_sync_ts is None:
+            return
+        import time
+        ago = int(time.time() - self._last_sync_ts)
+        poll_interval = int(self.settings.get("poll_seconds", 180))
+        stale = ago > poll_interval * 2
+        if ago < 60:
+            txt = f"Synced {ago}s ago"
+        elif ago < 3600:
+            txt = f"Synced {ago // 60}m {ago % 60}s ago"
+        else:
+            txt = f"Synced {ago // 3600}h ago"
+        if stale:
+            txt += "  ·  STALE"
+            color = MOCHA["yellow"]
+        else:
+            color = MOCHA["subtext0"]
+        self.synced_label.configure(text=txt, text_color=color)
+
     # -- periodic tick -------------------------------------------------------
     def _tick(self):
         if self._closing:
@@ -835,6 +857,7 @@ class App(ctk.CTk):
             except Exception:
                 pass
         self._update_next_reset()
+        self._update_freshness()
         self._tick_after_id = self.after(1000, self._tick)
 
     # -- actions -------------------------------------------------------------
