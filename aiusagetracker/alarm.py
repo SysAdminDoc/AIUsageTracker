@@ -138,7 +138,15 @@ def _write_wav(path, samples):
         w.writeframes(bytes(frames))
 
 
-def ensure_wav(name: str) -> str:
+CUSTOM_SOUND_KEY = "Custom"
+
+
+def ensure_wav(name: str, custom_path: str = "") -> str:
+    if name == CUSTOM_SOUND_KEY and custom_path:
+        from pathlib import Path
+        p = Path(custom_path)
+        if p.exists() and p.suffix.lower() == ".wav":
+            return str(p)
     name = name if name in SOUNDS else DEFAULT_SOUND
     path = config.data_dir() / f"alarm_{name.lower()}.wav"
     if not path.exists():
@@ -156,12 +164,12 @@ class Alarm:
     def active(self) -> bool:
         return self._active
 
-    def start(self, loop: bool = True, sound: str = DEFAULT_SOUND) -> None:
+    def start(self, loop: bool = True, sound: str = DEFAULT_SOUND, custom_path: str = "") -> None:
         if not _IS_WINDOWS or winsound is None:
             return
         with self._lock:
             try:
-                path = ensure_wav(sound)
+                path = ensure_wav(sound, custom_path)
                 flags = winsound.SND_FILENAME | winsound.SND_ASYNC
                 if loop:
                     flags |= winsound.SND_LOOP
@@ -181,12 +189,12 @@ class Alarm:
             self._active = False
 
 
-def preview(sound: str) -> None:
+def preview(sound: str, custom_path: str = "") -> None:
     """Play a sound once (non-looping) for the settings 'Test' button."""
     if not _IS_WINDOWS or winsound is None:
         return
     try:
-        path = ensure_wav(sound)
+        path = ensure_wav(sound, custom_path)
         winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
     except Exception:
         pass

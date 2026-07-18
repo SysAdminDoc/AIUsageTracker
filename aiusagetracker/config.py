@@ -50,7 +50,8 @@ DEFAULT_SETTINGS = {
     "poll_seconds": DEFAULT_POLL_SECONDS,
     "providers": {"claude": True, "codex": True},
     "alarm_sound": True,
-    "alarm_sound_name": "Chime",  # which synthesized alarm to play
+    "alarm_sound_name": "Chime",  # which synthesized alarm to play (or "Custom")
+    "custom_alarm_path": "",      # path to user's own .wav file
     "alarm_loop": True,           # repeat the sound until acknowledged
     "toast": True,
     "warn_toast_at": 90,          # toast when a window crosses this utilization

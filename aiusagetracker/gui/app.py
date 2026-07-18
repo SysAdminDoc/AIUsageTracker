@@ -9,7 +9,8 @@ from datetime import datetime
 import customtkinter as ctk
 
 from .. import __version__, config
-from ..alarm import (DEFAULT_SOUND, SOUND_NAMES, Alarm, notify, preview, send_webhook)
+from ..alarm import (CUSTOM_SOUND_KEY, DEFAULT_SOUND, SOUND_NAMES, Alarm, notify,
+                     preview, send_webhook)
 from ..models import LimitWindow, ProviderSnapshot, ResetEvent, now_utc
 from ..poller import Poller
 from ..storage import load_events, load_history
@@ -872,7 +873,8 @@ class App(ctk.CTk):
         self.banner.grid(row=1, column=0, sticky="ew", padx=SP_XL, pady=(SP_XS, SP_XS))
         if self.settings.get("alarm_sound", True):
             self._alarm.start(loop=self.settings.get("alarm_loop", True),
-                              sound=self.settings.get("alarm_sound_name", DEFAULT_SOUND))
+                              sound=self.settings.get("alarm_sound_name", DEFAULT_SOUND),
+                              custom_path=self.settings.get("custom_alarm_path", ""))
         if self.settings.get("toast", True):
             notify("AI Usage Reset", f"{labels} has reset.")
         webhook_url = self.settings.get("webhook_url", "")
