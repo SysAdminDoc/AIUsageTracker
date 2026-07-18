@@ -664,9 +664,20 @@ class App(ctk.CTk):
     def _build_activity_view(self):
         self.activity = ctk.CTkFrame(self.body, fg_color="transparent")
         self.activity.grid_columnconfigure(0, weight=1)
+
+        filter_bar = ctk.CTkFrame(self.activity, fg_color="transparent")
+        filter_bar.grid(row=0, column=0, sticky="ew", padx=SP_SM, pady=(SP_XS, SP_SM))
+        filter_bar.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(filter_bar, text="Filter:", font=(FONT, FS_BODY),
+                     text_color=MOCHA["subtext0"]).grid(row=0, column=0, padx=(0, SP_SM))
+        self._activity_filter = ctk.StringVar(value="All")
+        ctk.CTkSegmentedButton(filter_bar, values=["All", "Claude", "Codex"],
+                               variable=self._activity_filter, font=(FONT, FS_SMALL),
+                               command=lambda _: self._render_activity()).grid(row=0, column=1, sticky="w")
+
         self.activity_list = ctk.CTkFrame(self.activity, fg_color=MOCHA["mantle"], corner_radius=R_LG,
                                           border_width=1, border_color=MOCHA["surface1"])
-        self.activity_list.grid(row=0, column=0, sticky="ew", padx=SP_SM, pady=SP_XS)
+        self.activity_list.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=SP_XS)
         self.activity_list.grid_columnconfigure(0, weight=1)
 
     def show_view(self, key: str):
@@ -713,7 +724,11 @@ class App(ctk.CTk):
         self._event_rows(self.recent_list, load_events(200), 5)
 
     def _render_activity(self):
-        self._event_rows(self.activity_list, load_events(200), 100, pad=SP_XL)
+        events = load_events(200)
+        filt = self._activity_filter.get().lower()
+        if filt != "all":
+            events = [e for e in events if e.get("provider", "") == filt]
+        self._event_rows(self.activity_list, events, 100, pad=SP_XL)
 
     # -- queue / event handling ---------------------------------------------
     def _drain_queue(self):
