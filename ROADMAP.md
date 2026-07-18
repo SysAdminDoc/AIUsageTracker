@@ -22,13 +22,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Research-Driven Additions (2026-07-18)
 
-- [ ] P1 — **Event hooks (shell command on reset/threshold)**
-  Why: Power users want to trigger automation on reset (auto-resume Claude Code, send notification to phone, log to file). Direct competitor (jens-duttke) ships this.
-  Evidence: jens-duttke/usage-monitor-for-claude "event commands"; community request for agent self-pacing (issue #43149).
-  Touches: `config.py` (new `on_reset_command`, `on_threshold_command` settings), `poller.py` (subprocess.Popen on event)
-  Acceptance: User can configure a shell command in Settings that executes when any window resets; command receives provider/window/utilization as args.
-  Complexity: M
-
 - [ ] P2 — **Usage sparklines in LimitRow cards**
   Why: Current bars show point-in-time snapshot only. A tiny sparkline (last 24h of polls) shows trend — is usage accelerating or flat? Competitors (CodexBar, phuryn/claude-usage) ship inline charts.
   Evidence: CodexBar inline spend charts; phuryn/claude-usage Chart.js graphs; community demand for history (Product Hunt 239 upvotes).

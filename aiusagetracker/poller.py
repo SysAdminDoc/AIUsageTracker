@@ -120,6 +120,13 @@ class Poller:
                         self.on_warn(w)
                     except Exception:
                         pass
+                config.run_hook(self.settings.get("on_threshold_command", ""), {
+                    "AIU_EVENT": "threshold",
+                    "AIU_PROVIDER": w.provider,
+                    "AIU_WINDOW": w.key,
+                    "AIU_LABEL": w.label,
+                    "AIU_UTILIZATION": f"{w.utilization:.1f}",
+                })
 
         # Reset detection.
         if not self._primed:
@@ -134,6 +141,13 @@ class Poller:
                 storage.append_event(ev)
                 self._warned.discard(ev.key)   # allow warning again next period
                 self._log(f"RESET: {ev.provider} {ev.label}")
+                config.run_hook(self.settings.get("on_reset_command", ""), {
+                    "AIU_EVENT": "reset",
+                    "AIU_PROVIDER": ev.provider,
+                    "AIU_WINDOW": ev.key,
+                    "AIU_LABEL": ev.label,
+                    "AIU_UTILIZATION": f"{ev.previous_utilization or 0:.1f}",
+                })
             if self.on_reset:
                 try:
                     self.on_reset(events)

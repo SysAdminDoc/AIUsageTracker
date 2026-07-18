@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from pathlib import Path
 
 APP_NAME = "AIUsageTracker"
@@ -26,6 +27,8 @@ DEFAULT_POLL_SECONDS = 180
 MIN_POLL_SECONDS = 180
 # Extra poll fired shortly after a window's resets_at to catch the rollover fast.
 RESET_CONFIRM_DELAY = 8
+THEME_KEYS = {"midnight", "graphite", "daylight"}
+DEFAULT_THEME = "midnight"
 
 
 def data_dir() -> Path:
@@ -52,14 +55,25 @@ DEFAULT_SETTINGS = {
     "toast": True,
     "warn_toast_at": 90,          # toast when a window crosses this utilization
     "start_minimized": False,
-    "theme": "mocha",
+    "theme": DEFAULT_THEME,
     # Per-window alarm opt-out, keyed by LimitWindow.key. Missing key => True.
     "window_alarms": {},
+    # Event hooks: shell commands executed on reset/threshold. Empty = disabled.
+    "on_reset_command": "",
+    "on_threshold_command": "",
 }
 
 
 def window_alarm_enabled(settings: dict, key: str) -> bool:
     return bool(settings.get("window_alarms", {}).get(key, True))
+
+
+def normalize_theme(value) -> str:
+    """Normalize persisted theme values, including the pre-picker legacy key."""
+    key = str(value or DEFAULT_THEME).strip().lower()
+    if key == "mocha":
+        key = DEFAULT_THEME
+    return key if key in THEME_KEYS else DEFAULT_THEME
 
 
 def load_settings() -> dict:
@@ -71,6 +85,7 @@ def load_settings() -> dict:
         except (json.JSONDecodeError, OSError):
             pass
     settings["poll_seconds"] = max(MIN_POLL_SECONDS, int(settings.get("poll_seconds", DEFAULT_POLL_SECONDS)))
+    settings["theme"] = normalize_theme(settings.get("theme"))
     return settings
 
 
@@ -78,4 +93,16 @@ def save_settings(settings: dict) -> None:
     try:
         settings_path().write_text(json.dumps(settings, indent=2), encoding="utf-8")
     except OSError:
+        pass
+
+
+def run_hook(command: str, env_vars: dict[str, str]) -> None:
+    """Execute a user-configured event hook command with environment context."""
+    if not command or not command.strip():
+        return
+    try:
+        env = {**os.environ, **env_vars}
+        subprocess.Popen(command, shell=True, env=env,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
         pass
