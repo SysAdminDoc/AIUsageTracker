@@ -22,13 +22,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Research-Driven Additions (2026-07-18)
 
-- [ ] P2 — **PyInstaller exe size reduction**
-  Why: 45MB is large for a monitoring widget. Competitors achieve 2-6MB. Clean venv + UPX + module exclusions can reach ~20MB.
-  Evidence: jens-duttke at ~2MB (compiled TS); claudeusagewin at ~6MB (.NET). PyInstaller docs on --exclude-module + UPX.
-  Touches: `build.ps1` (add UPX path, exclude unused modules), new `build.spec` (explicit excludes for scipy/numpy/test/email/xmlrpc/unused Pillow plugins)
-  Acceptance: `dist\AIUsageTracker.exe` under 25MB without functionality loss.
-  Complexity: M
-
 - [ ] P2 — **Multiple account/credential support**
   Why: Power users run 2+ Claude/Codex subscriptions to workaround rate limits; need fast switching or simultaneous monitoring.
   Evidence: Medium article "Running Two Claude Code Subs Side by Side"; community discussions on multi-profile workarounds.

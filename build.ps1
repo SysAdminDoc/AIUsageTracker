@@ -16,6 +16,17 @@ if ($LASTEXITCODE -ne 0) {
     python -m pip install pyinstaller
 }
 
+# Modules not used by this app - excluding them reduces exe size significantly.
+$excludes = @(
+    "numpy", "scipy", "pandas", "matplotlib", "tkinter.test",
+    "unittest", "xmlrpc", "pydoc", "doctest", "argparse",
+    "ftplib", "imaplib", "smtplib", "nntplib", "poplib", "telnetlib",
+    "turtle", "turtledemo", "curses", "lib2to3", "ensurepip",
+    "venv", "distutils", "setuptools", "pkg_resources", "pip",
+    "PIL.ImageQt", "PIL.ImageTk"
+)
+$excludeArgs = ($excludes | ForEach-Object { "--exclude-module"; $_ })
+
 Write-Host "Building AIUsageTracker.exe..." -ForegroundColor Cyan
 python -m PyInstaller `
     --onefile `
@@ -26,6 +37,7 @@ python -m PyInstaller `
     --add-data "assets\app-logo.ico;assets" `
     --collect-all customtkinter `
     --collect-submodules windows_toasts `
+    @excludeArgs `
     --clean --noconfirm `
     run.py
 
