@@ -36,13 +36,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: Activity view shows a 7-row × N-week grid color-coded by daily peak utilization; tooltip shows exact values.
   Complexity: L
 
-- [ ] P3 — **Export usage data to env var / named pipe (agent integration)**
-  Why: Autonomous coding agents (Claude Code /loop, Codex background) could self-pace if they knew remaining quota. Community issue #43149 requests exactly this.
-  Evidence: GitHub issue anthropics/claude-code#43149 ("Expose API usage limits and rate-limit reset timer"); jens-duttke event hooks.
-  Touches: `config.py` (enable/disable export), `poller.py` (write `AI_USAGE_PCT` / `AI_RESET_AT` env vars or a well-known temp file on each poll)
-  Acceptance: A file at `%APPDATA%\AIUsageTracker\current_status.json` is updated every poll with provider/utilization/resets_at; agents can read it.
-  Complexity: M
-
 - [ ] P3 — **Telegram / Discord alert forwarding**
   Why: Users are often AFK (phone, different PC) when limits reset. Push notification to phone ensures they resume immediately.
   Evidence: en4ble1337/codex-usage-monitor ships Discord/Telegram alerts; Javis603/token-monitor has Discord Rich Presence.

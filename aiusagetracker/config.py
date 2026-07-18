@@ -61,6 +61,8 @@ DEFAULT_SETTINGS = {
     # Event hooks: shell commands executed on reset/threshold. Empty = disabled.
     "on_reset_command": "",
     "on_threshold_command": "",
+    # Export a JSON status file each poll for external tool integration.
+    "export_status": True,
 }
 
 

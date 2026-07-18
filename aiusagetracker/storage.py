@@ -100,6 +100,17 @@ def load_history(since_hours: float = 24.0) -> list[dict]:
     return out
 
 
+def export_status(windows: list[dict]) -> None:
+    """Write current_status.json for external tools (agents, scripts) to read."""
+    payload = {"ts": time.time(), "windows": windows}
+    try:
+        (config.data_dir() / "current_status.json").write_text(
+            json.dumps(payload, indent=2), encoding="utf-8"
+        )
+    except OSError:
+        pass
+
+
 def prune_history() -> None:
     """Remove records older than HISTORY_MAX_AGE_DAYS. Called periodically."""
     p = _history_path()

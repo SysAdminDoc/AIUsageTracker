@@ -110,7 +110,13 @@ class Poller:
         if not collected:
             return
 
+        window_data = [{"key": w.key, "provider": w.provider, "label": w.label,
+                        "pct": w.utilization,
+                        "resets_at": w.resets_at.isoformat() if w.resets_at else None}
+                       for w in collected]
         storage.append_history([{"key": w.key, "pct": w.utilization} for w in collected])
+        if self.settings.get("export_status", True):
+            storage.export_status(window_data)
 
         # Warn on high utilization (once per period until it resets).
         warn_at = float(self.settings.get("warn_toast_at", 90))

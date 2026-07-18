@@ -31,6 +31,7 @@ settings.json
 reset_events.jsonl
 snapshot_*.json
 usage_history.jsonl
+current_status.json
 
 # PyInstaller generated spec
 *.spec
