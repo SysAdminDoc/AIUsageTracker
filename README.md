@@ -1,6 +1,6 @@
 # AIUsageTracker
 
-[![version](https://img.shields.io/badge/version-0.2.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
+[![version](https://img.shields.io/badge/version-0.3.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
 [![license](https://img.shields.io/badge/license-MIT-a6e3a1)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-89b4fa)](https://github.com/SysAdminDoc/AIUsageTracker)
 [![python](https://img.shields.io/badge/python-3.10%2B-fab387)](https://www.python.org/)
@@ -89,11 +89,14 @@ python -m aiusagetracker.cli monitor   # run the reset watcher in the terminal
   window. Only the windows you care about will wake you.
 - **Brand-aware dashboard** — Claude and Codex provider cards, summary metrics
   (highest usage, next reset, connections), and a recent-activity feed.
+- **Distinct app identity** — a purpose-built quota-cycle mark shared by the
+  window, taskbar, system tray, and packaged executable.
 - **Live countdowns** to each reset, plus the exact local reset time.
 - **System tray** — runs quietly in the background; Show / Poll now / Settings / Quit.
 - **Reset history** — every detected reset is logged to
   `%APPDATA%\AIUsageTracker\reset_events.jsonl`.
-- **Dark by default** — Catppuccin Mocha.
+- **Three appearance themes** — Midnight, Graphite, and Daylight, applied live
+  after saving Settings.
 
 ## Settings
 
@@ -109,6 +112,7 @@ Gear → **Settings**. Stored in `%APPDATA%\AIUsageTracker\settings.json`.
 | Toast notifications | on | Native Windows toasts. |
 | Start minimized to tray | off | Launch straight to the tray. |
 | Per-window alarm | on | Toggled from the button on each usage bar. |
+| Theme | Midnight | Choose Midnight, Graphite, or Daylight; applies immediately. |
 
 ## Build the exe
 
