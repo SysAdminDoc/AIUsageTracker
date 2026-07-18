@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiusagetracker"
-version = "0.1.0"
+version = "0.2.0"
 description = "Monitor Claude & Codex usage windows and alarm the instant they reset."
 readme = "README.md"
 requires-python = ">=3.10"

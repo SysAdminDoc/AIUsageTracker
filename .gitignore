@@ -33,3 +33,6 @@ snapshot_*.json
 
 # PyInstaller generated spec
 *.spec
+
+# Screenshots may contain real usage data - keep them out of the repo
+assets/*.png

@@ -23,15 +23,40 @@ MOCHA = {
     "lavender": "#b4befe",
 }
 
-# Radius tokens (pills/ovals are banned)
+# Radius tokens (pills/ovals are banned; scale = 0/4/6/8/10/12)
+R_XS = 6
 R_SM = 8
 R_MD = 10
 R_LG = 12
 
-# Accent per provider
+# Spacing scale (consistent rhythm)
+SP_XS = 4
+SP_SM = 8
+SP_MD = 12
+SP_LG = 16
+SP_XL = 24
+
+# Typography scale (no random px values)
+FS_DISPLAY = 24
+FS_H1 = 20
+FS_H2 = 15
+FS_TITLE = 13
+FS_BODY = 12
+FS_SMALL = 11
+FS_TINY = 10
+
+# Surface / border layering: base < mantle < surface0 < surface1
+BORDER = MOCHA["surface1"]
+BORDER_SOFT = MOCHA["surface0"]
+
+# Brand colours (used for provider accents + tiles)
+CLAUDE_BRAND = "#d97757"
+CODEX_BRAND = "#10a37f"
+
+# Accent per provider (brand-aligned)
 PROVIDER_ACCENT = {
-    "claude": MOCHA["peach"],
-    "codex": MOCHA["teal"],
+    "claude": MOCHA["peach"],   # reads as Claude clay against dark UI
+    "codex": MOCHA["teal"],     # reads as OpenAI green/teal against dark UI
 }
 
 SEVERITY_COLOR = {

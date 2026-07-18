@@ -1,6 +1,6 @@
 # AIUsageTracker
 
-[![version](https://img.shields.io/badge/version-0.1.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
+[![version](https://img.shields.io/badge/version-0.2.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
 [![license](https://img.shields.io/badge/license-MIT-a6e3a1)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-89b4fa)](https://github.com/SysAdminDoc/AIUsageTracker)
 [![python](https://img.shields.io/badge/python-3.10%2B-fab387)](https://www.python.org/)
@@ -9,7 +9,9 @@ A Windows desktop widget that tracks your **Claude** (claude.ai / Claude Code) a
 **OpenAI Codex** usage windows in real time — and fires an **alarm the instant a
 usage window resets**, so you never have to sit refreshing the usage pages again.
 
-![AIUsageTracker](assets/screenshot.png)
+A dark, dashboard-style desktop app: a sidebar (Dashboard / Activity), summary cards
+(highest usage, next reset, connections), side-by-side Claude and Codex cards with
+per-window usage bars and alarm toggles, and a recent-activity feed.
 
 ## Why
 
@@ -80,10 +82,13 @@ python -m aiusagetracker.cli monitor   # run the reset watcher in the terminal
 
 - **Live usage bars** for every Claude & Codex limit window (5-hour session, weekly,
   per-model), colored by severity (green / yellow / red).
-- **Reset alarm** — audible looping alarm + native Windows toast + a red in-app
-  banner the moment a window resets.
+- **Reset alarm** — audible alarm + native Windows toast + a red in-app banner the
+  moment a window resets. Choose from six built-in alarm tones (Chime, Alert, Pulse,
+  Bell, Siren, Arcade) and preview them from Settings.
 - **Per-bar alarm toggles** — enable/disable the alarm independently for each usage
   window. Only the windows you care about will wake you.
+- **Brand-aware dashboard** — Claude and Codex provider cards, summary metrics
+  (highest usage, next reset, connections), and a recent-activity feed.
 - **Live countdowns** to each reset, plus the exact local reset time.
 - **System tray** — runs quietly in the background; Show / Poll now / Settings / Quit.
 - **Reset history** — every detected reset is logged to
@@ -99,6 +104,7 @@ Gear → **Settings**. Stored in `%APPDATA%\AIUsageTracker\settings.json`.
 | Poll interval | 180s | Minimum 180s (Claude's endpoint rate-limits faster polling). |
 | Track Claude / Codex | on | Disable a provider you don't use. |
 | Audible alarm on reset | on | Master switch for the sound. |
+| Alarm sound | Chime | Pick from Chime / Alert / Pulse / Bell / Siren / Arcade; *Test* previews it. |
 | Loop alarm until acknowledged | on | Repeat the tone until you click *Stop alarm*. |
 | Toast notifications | on | Native Windows toasts. |
 | Start minimized to tray | off | Launch straight to the tray. |
