@@ -22,13 +22,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Research-Driven Additions (2026-07-18)
 
-- [ ] P1 — **Burn-rate / ETA-to-exhaustion forecast**
-  Why: Community's biggest unmet need after threshold alerts — "at current pace, when will I hit the wall?" Multiple competitors (Claude-Code-Usage-Monitor, bozdemir widget, CodexBar) offer this.
-  Evidence: GitHub issues #41930, #55779; Claude-Code-Usage-Monitor P90 calculator; 232-upvote Reddit thread on surprise mid-task halts.
-  Touches: `poller.py` (track utilization deltas over time), `models.py` (add `burn_rate` field), `gui/app.py` (display ETA in StatCard)
-  Acceptance: Dashboard shows "~Xh Ym until limit" based on rolling rate-of-change; updates each poll cycle.
-  Complexity: M
-
 - [ ] P1 — **Event hooks (shell command on reset/threshold)**
   Why: Power users want to trigger automation on reset (auto-resume Claude Code, send notification to phone, log to file). Direct competitor (jens-duttke) ships this.
   Evidence: jens-duttke/usage-monitor-for-claude "event commands"; community request for agent self-pacing (issue #43149).

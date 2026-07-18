@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import queue
 import threading
+from collections import deque
 from datetime import datetime
 
 import customtkinter as ctk
@@ -393,6 +394,7 @@ class App(ctk.CTk):
         self._rows: dict[str, LimitRow] = {}
         self._alarm = Alarm()
         self._tray = None
+        self._burn_samples: dict[str, deque] = {}  # key -> deque of (timestamp, pct)
         self._view = "dashboard"
         self._settings_dialog = None
         self._refresh_pending: set[str] = set()
@@ -679,6 +681,11 @@ class App(ctk.CTk):
         card = self.provider_cards.get(snap.provider)
         if card:
             card.update(snap, self.settings, self._set_window_alarm, self._rows)
+        if snap.ok:
+            ts = snap.fetched_at.timestamp()
+            for w in snap.windows:
+                samples = self._burn_samples.setdefault(w.key, deque(maxlen=20))
+                samples.append((ts, w.utilization))
         self._recompute_summary()
         if snap.provider in self._refresh_pending:
             self._refresh_pending.discard(snap.provider)
@@ -694,8 +701,11 @@ class App(ctk.CTk):
 
         if windows:
             hi = max(windows, key=lambda w: w.utilization)
-            self.stat_highest.set(f"{hi.utilization:.0f}%",
-                                  f"{hi.label} · {PROVIDER_TITLES.get(hi.provider, hi.provider)}",
+            eta_str = self._burn_eta(hi.key)
+            subtitle = f"{hi.label} · {PROVIDER_TITLES.get(hi.provider, hi.provider)}"
+            if eta_str:
+                subtitle += f" · {eta_str}"
+            self.stat_highest.set(f"{hi.utilization:.0f}%", subtitle,
                                   SEVERITY_COLOR.get(hi.severity, MOCHA["text"]))
             self._update_tray_icon(hi.utilization)
             healthy = sum(w.utilization <= 50 for w in windows)
@@ -732,6 +742,31 @@ class App(ctk.CTk):
             self.synced_label.configure(text=f"Last synced {latest:%I:%M:%S %p}  ·  every {self.settings['poll_seconds']}s")
             self.conn_detail.configure(text=f"Synced {latest:%I:%M:%S %p}")
         self._render_recent()
+
+    def _burn_eta(self, key: str) -> str:
+        """Estimate time until 100% based on recent utilization rate of change."""
+        samples = self._burn_samples.get(key)
+        if not samples or len(samples) < 2:
+            return ""
+        oldest_ts, oldest_pct = samples[0]
+        newest_ts, newest_pct = samples[-1]
+        dt = newest_ts - oldest_ts
+        if dt < 30:
+            return ""
+        rate = (newest_pct - oldest_pct) / dt  # % per second
+        if rate <= 0.0001:
+            return ""
+        remaining = 100.0 - newest_pct
+        if remaining <= 0:
+            return "at limit"
+        secs = remaining / rate
+        if secs > 86400:
+            return ""
+        h, rem = divmod(int(secs), 3600)
+        m = rem // 60
+        if h:
+            return f"~{h}h {m}m to limit"
+        return f"~{m}m to limit"
 
     def _update_next_reset(self, windows=None):
         if windows is None:
