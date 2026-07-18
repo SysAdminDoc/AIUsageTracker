@@ -1,6 +1,6 @@
-httpx>=0.27
+httpx2>=2.0
 customtkinter>=5.2
 pystray>=0.19
-pillow>=10.0
+pillow>=12.3.0
 windows-toasts>=1.1; platform_system=='Windows'
 plyer>=2.1

@@ -22,20 +22,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Research-Driven Additions (2026-07-18)
 
-- [ ] P0 — **Pillow CVE floor upgrade**
-  Why: 7 CVEs in 2026 (including High-severity buffer overflows) affect versions below 12.3.0.
-  Evidence: CVE-2026-25990, CVE-2026-42308, CVE-2026-42309, CVE-2026-54059/60, CVE-2026-55379/80.
-  Touches: `requirements.txt`, `pyproject.toml` (pin `Pillow>=12.3.0`)
-  Acceptance: `pip install` resolves Pillow >= 12.3.0; `grype` or `pip-audit` reports zero Pillow CVEs.
-  Complexity: S
-
-- [ ] P0 — **Migrate httpx → httpx2**
-  Why: httpx upstream (encode) abandoned Feb 2026; no future security patches. httpx2 (Pydantic fork) is API-identical drop-in.
-  Evidence: encode closed all issues/discussions; httpx2 published Jun 2026 under active maintenance.
-  Touches: `requirements.txt`, all `import httpx` statements (~3 files), `pyproject.toml`
-  Acceptance: `import httpx2 as httpx` works; all tests pass; polling succeeds against live endpoints.
-  Complexity: S
-
 - [ ] P1 — **Dynamic tray icon (severity color + % text)**
   Why: Users must open the full window to see usage status. Competitors (TrafficMonitor, Pomodoro timers, iStat Menus) render live data INTO the tray icon for instant glanceability.
   Evidence: jens-duttke/usage-monitor-for-claude uses color-coded tray; community signal #1 is "I want to know without clicking."

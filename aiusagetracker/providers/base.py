@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-import httpx
+import httpx2 as httpx
 
 from ..models import ProviderSnapshot
 
