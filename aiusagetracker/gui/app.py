@@ -446,6 +446,8 @@ class App(ctk.CTk):
         self._pending_resets: list[ResetEvent] = []
         self._reset_debounce_id = None
         self._last_sync_ts: float | None = None
+        self._snoozed: set[str] = set()
+        self._last_alarming_keys: list[str] = []
         self._view = "dashboard"
         self._settings_dialog = None
         self._refresh_pending: set[str] = set()
@@ -582,9 +584,12 @@ class App(ctk.CTk):
         self.banner_label = ctk.CTkLabel(self.banner, text="", font=(FONT, FS_TITLE, "bold"),
                                          text_color=MOCHA["crust"], anchor="w")
         self.banner_label.grid(row=0, column=0, sticky="w", padx=SP_LG, pady=SP_MD)
+        ctk.CTkButton(self.banner, text="Snooze", width=80, height=30, corner_radius=R_SM,
+                      fg_color=MOCHA["surface0"], hover_color=MOCHA["surface1"], font=(FONT, FS_BODY),
+                      text_color=MOCHA["text"], command=self._snooze_alarm).grid(row=0, column=1, padx=(0, SP_XS), pady=SP_MD)
         ctk.CTkButton(self.banner, text="Stop alarm", width=104, height=30, corner_radius=R_SM,
                       fg_color=MOCHA["crust"], hover_color=MOCHA["mantle"], font=(FONT, FS_BODY, "bold"),
-                      text_color=MOCHA["text"], command=self.acknowledge_alarm).grid(row=0, column=1, padx=SP_MD, pady=SP_MD)
+                      text_color=MOCHA["text"], command=self.acknowledge_alarm).grid(row=0, column=2, padx=SP_MD, pady=SP_MD)
 
         self.body = ctk.CTkScrollableFrame(main, fg_color="transparent")
         self.body.grid(row=2, column=0, sticky="nsew", padx=SP_LG, pady=(0, SP_MD))
@@ -837,12 +842,17 @@ class App(ctk.CTk):
             self.stat_next.set("--", "no upcoming resets")
 
     def _on_reset(self, events: list[ResetEvent]):
-        alarming = [e for e in events if config.window_alarm_enabled(self.settings, e.key)]
+        for e in events:
+            self._snoozed.discard(e.key)
+        alarming = [e for e in events
+                    if config.window_alarm_enabled(self.settings, e.key)
+                    and e.key not in self._snoozed]
         self._render_recent()
         if self._view == "activity":
             self._render_activity()
         if not alarming:
             return
+        self._last_alarming_keys = [e.key for e in alarming]
         self._pending_resets.extend(alarming)
         if self._reset_debounce_id is not None:
             try:
@@ -941,6 +951,11 @@ class App(ctk.CTk):
             self.refresh_btn.configure(text="↻  Refresh usage", state="normal")
 
     def acknowledge_alarm(self):
+        self._alarm.stop()
+        self.banner.grid_forget()
+
+    def _snooze_alarm(self):
+        self._snoozed.update(self._last_alarming_keys)
         self._alarm.stop()
         self.banner.grid_forget()
 
