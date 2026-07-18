@@ -17,13 +17,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: User can add multiple credential file paths in Settings; each account appears as a separate provider card.
   Complexity: L
 
-- [ ] P3 — **Calendar heatmap in Activity view**
-  Why: Reveals daily/weekly usage patterns (which hours are heavy, which days hit limits). GitHub-style contribution graphs are universally understood.
-  Evidence: GitHub contribution heatmap; tokscale 2D contributions graph; data visualization best practices.
-  Touches: `gui/app.py` (new heatmap widget in Activity view), `storage.py` (query usage_history by day/hour)
-  Acceptance: Activity view shows a 7-row × N-week grid color-coded by daily peak utilization; tooltip shows exact values.
-  Complexity: L
-
 
 ## Done
 

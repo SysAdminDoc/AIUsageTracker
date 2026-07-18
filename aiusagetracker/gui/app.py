@@ -765,9 +765,21 @@ class App(ctk.CTk):
                                variable=self._activity_filter, font=(FONT, FS_SMALL),
                                command=lambda _: self._render_activity()).grid(row=0, column=1, sticky="w")
 
+        # Calendar heatmap
+        heatmap_card = ctk.CTkFrame(self.activity, fg_color=MOCHA["mantle"], corner_radius=R_LG,
+                                     border_width=1, border_color=MOCHA["surface1"])
+        heatmap_card.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))
+        heatmap_card.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(heatmap_card, text="Usage intensity (last 4 weeks)",
+                     font=(FONT, FS_TITLE, "bold"), text_color=MOCHA["text"],
+                     anchor="w").grid(row=0, column=0, sticky="w", padx=SP_LG, pady=(SP_MD, SP_XS))
+        self._heatmap_canvas = ctk.CTkCanvas(heatmap_card, height=100,
+                                              bg=MOCHA["mantle"], highlightthickness=0)
+        self._heatmap_canvas.grid(row=1, column=0, sticky="ew", padx=SP_LG, pady=(0, SP_MD))
+
         self.activity_list = ctk.CTkFrame(self.activity, fg_color=MOCHA["mantle"], corner_radius=R_LG,
                                           border_width=1, border_color=MOCHA["surface1"])
-        self.activity_list.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=SP_XS)
+        self.activity_list.grid(row=2, column=0, sticky="ew", padx=SP_SM, pady=SP_XS)
         self.activity_list.grid_columnconfigure(0, weight=1)
 
     def show_view(self, key: str):
@@ -819,6 +831,51 @@ class App(ctk.CTk):
         if filt != "all":
             events = [e for e in events if e.get("provider", "") == filt]
         self._event_rows(self.activity_list, events, 100, pad=SP_XL)
+        self._render_heatmap()
+
+    def _render_heatmap(self):
+        """Draw a 7-row x 4-week calendar heatmap from usage history."""
+        canvas = self._heatmap_canvas
+        canvas.delete("all")
+        history = load_history(since_hours=28 * 24)
+
+        from datetime import date, timedelta
+        import time as _time
+
+        daily_peaks: dict[str, float] = {}
+        for rec in history:
+            ts = rec.get("ts", 0)
+            day_key = date.fromtimestamp(ts).isoformat()
+            peak = max((w.get("pct", 0) for w in rec.get("windows", [])), default=0)
+            daily_peaks[day_key] = max(daily_peaks.get(day_key, 0), peak)
+
+        today = date.today()
+        start = today - timedelta(days=27)
+
+        cell = 12
+        gap = 2
+        x_off = 4
+        y_off = 4
+
+        for col in range(28):
+            d = start + timedelta(days=col)
+            row = d.weekday()
+            x = x_off + (col // 7) * (cell + gap) * 7 + (col % 7) * (cell + gap)
+            y = y_off + row * (cell + gap)
+            pct = daily_peaks.get(d.isoformat(), -1)
+            if pct < 0:
+                color = MOCHA["surface0"]
+            elif pct < 25:
+                color = MOCHA["green"]
+            elif pct < 50:
+                color = MOCHA["teal"]
+            elif pct < 75:
+                color = MOCHA["yellow"]
+            elif pct < 90:
+                color = MOCHA["peach"]
+            else:
+                color = MOCHA["red"]
+            canvas.create_rectangle(x, y, x + cell, y + cell, fill=color, outline="")
 
     # -- queue / event handling ---------------------------------------------
     def _drain_queue(self):
