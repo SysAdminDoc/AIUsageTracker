@@ -4,7 +4,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Next
 
-- 🤖 **Frameless always-on-top widget mode** — compact desktop widget variant (drag-to-move, opacity, remembers position) in addition to the full window.
 - 🤖 **ccusage-style token/cost view** — read local `~/.claude/projects/**/*.jsonl` and `~/.codex/state_5.sqlite` for token/cost totals to complement the account-window view.
 
 ## Considering

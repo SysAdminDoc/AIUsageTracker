@@ -419,6 +419,51 @@ class ProviderCard(ctk.CTkFrame):
 
 
 # ---------------------------------------------------------------------------
+# Mini widget (frameless always-on-top overlay)
+# ---------------------------------------------------------------------------
+class MiniWidget(ctk.CTkToplevel):
+    """Compact always-on-top overlay showing highest usage + next reset countdown."""
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        self.attributes("-alpha", 0.92)
+        self.configure(fg_color=MOCHA["crust"])
+        self.geometry("220x70+1680+20")
+        self._drag_x = 0
+        self._drag_y = 0
+
+        self.grid_columnconfigure(0, weight=1)
+        self.bind("<Button-1>", self._start_drag)
+        self.bind("<B1-Motion>", self._do_drag)
+        self.bind("<Double-Button-1>", lambda e: master.toggle_mini())
+
+        self.pct_label = ctk.CTkLabel(self, text="--", font=(FONT, FS_H1, "bold"),
+                                       text_color=MOCHA["text"], anchor="w")
+        self.pct_label.grid(row=0, column=0, sticky="w", padx=10, pady=(8, 0))
+        self.pct_label.bind("<Button-1>", self._start_drag)
+        self.pct_label.bind("<B1-Motion>", self._do_drag)
+
+        self.sub_label = ctk.CTkLabel(self, text="", font=(FONT, FS_SMALL),
+                                       text_color=MOCHA["subtext0"], anchor="w")
+        self.sub_label.grid(row=1, column=0, sticky="w", padx=10, pady=(0, 8))
+        self.sub_label.bind("<Button-1>", self._start_drag)
+        self.sub_label.bind("<B1-Motion>", self._do_drag)
+
+    def _start_drag(self, event):
+        self._drag_x = event.x_root - self.winfo_x()
+        self._drag_y = event.y_root - self.winfo_y()
+
+    def _do_drag(self, event):
+        self.geometry(f"+{event.x_root - self._drag_x}+{event.y_root - self._drag_y}")
+
+    def update_data(self, pct_text: str, subtitle: str, color: str):
+        self.pct_label.configure(text=pct_text, text_color=color)
+        self.sub_label.configure(text=subtitle)
+
+
+# ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
 class App(ctk.CTk):
@@ -449,6 +494,7 @@ class App(ctk.CTk):
         self._last_sync_ts: float | None = None
         self._snoozed: set[str] = set()
         self._last_alarming_keys: list[str] = []
+        self._mini: MiniWidget | None = None
         self._view = "dashboard"
         self._settings_dialog = None
         self._refresh_pending: set[str] = set()
@@ -782,6 +828,13 @@ class App(ctk.CTk):
             self.stat_highest.set(f"{hi.utilization:.0f}%", subtitle,
                                   SEVERITY_COLOR.get(hi.severity, MOCHA["text"]))
             self._update_tray_icon(hi.utilization)
+            if self._mini is not None and self._mini.winfo_exists():
+                reset_str = fmt_countdown(hi.seconds_until_reset())
+                self._mini.update_data(
+                    f"{hi.utilization:.0f}%",
+                    f"{hi.label} · resets {reset_str}",
+                    SEVERITY_COLOR.get(hi.severity, MOCHA["text"]),
+                )
             healthy = sum(w.utilization <= 50 for w in windows)
             pressure = sum(w.utilization >= 70 for w in windows)
             self.stat_active.set(str(len(windows)), "Across both providers", MOCHA["text"])
@@ -1047,6 +1100,7 @@ class App(ctk.CTk):
         image = icons.make_icon(64)
         menu = pystray.Menu(
             pystray.MenuItem("Show", lambda i=None, it=None: self.after(0, self._show_window), default=True),
+            pystray.MenuItem("Mini mode", lambda i=None, it=None: self.after(0, self.toggle_mini)),
             pystray.MenuItem("Poll now", lambda i=None, it=None: self.after(0, self.refresh_now)),
             pystray.MenuItem("Settings", lambda i=None, it=None: self.after(0, self.open_settings)),
             pystray.Menu.SEPARATOR,
@@ -1062,6 +1116,15 @@ class App(ctk.CTk):
                 self._tray.title = f"AI Usage: {utilization_pct:.0f}%"
             except Exception:
                 pass
+
+    def toggle_mini(self):
+        if self._mini is not None and self._mini.winfo_exists():
+            self._mini.destroy()
+            self._mini = None
+            self.deiconify()
+        else:
+            self._mini = MiniWidget(self)
+            self.withdraw()
 
     def _show_window(self):
         self.deiconify(); self.lift(); self.focus_force()
