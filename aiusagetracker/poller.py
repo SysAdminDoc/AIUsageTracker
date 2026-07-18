@@ -26,6 +26,7 @@ class Poller:
         self._snapshots: dict[str, ProviderSnapshot] = {}
         self._last_poll: dict[str, object] = {}
         self._warned: set[str] = set()      # window keys already warned this period
+        self._health_warned: set[str] = set()  # providers warned about missing resets_at
         self._lock = threading.Lock()
         self._wake = threading.Event()
         self._stop = threading.Event()
@@ -109,6 +110,13 @@ class Poller:
 
         if not collected:
             return
+
+        for w in collected:
+            if w.resets_at is None and w.key not in self._health_warned:
+                self._health_warned.add(w.key)
+                self._log(f"HEALTH: {w.provider} {w.label} missing resets_at (schema drift?)")
+            elif w.resets_at is not None:
+                self._health_warned.discard(w.key)
 
         window_data = [{"key": w.key, "provider": w.provider, "label": w.label,
                         "pct": w.utilization,

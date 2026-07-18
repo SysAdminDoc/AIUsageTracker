@@ -10,7 +10,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 - 🤖 **Custom alarm sound file** — let users point at their own `.wav` in addition to the six built-in tones.
 - 🤖 **Focus rings / keyboard-nav pass** — CTk focus visibility is minimal; add visible focus states and verify tab order for accessibility.
 - 🤖 **Snooze / one-window acknowledge** — acknowledge a single window's alarm without silencing others.
-- 🤖 **Source health check** — surface a warning when an endpoint stops returning a valid `resets_at` (schema drift early-warning), per the research note.
 - 🤖 **ccusage-style token/cost view** — read local `~/.claude/projects/**/*.jsonl` and `~/.codex/state_5.sqlite` for token/cost totals to complement the account-window view.
 
 ## Considering
