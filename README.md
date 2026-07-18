@@ -1,6 +1,6 @@
 # AIUsageTracker
 
-[![version](https://img.shields.io/badge/version-0.3.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
+[![version](https://img.shields.io/badge/version-0.4.0-cba6f7)](https://github.com/SysAdminDoc/AIUsageTracker/releases)
 [![license](https://img.shields.io/badge/license-MIT-a6e3a1)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-89b4fa)](https://github.com/SysAdminDoc/AIUsageTracker)
 [![python](https://img.shields.io/badge/python-3.10%2B-fab387)](https://www.python.org/)

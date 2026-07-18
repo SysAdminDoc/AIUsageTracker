@@ -2,6 +2,18 @@
 
 All notable changes to AIUsageTracker are documented here.
 
+## [0.4.0] - 2026-07-18
+
+Data intelligence and multi-account support.
+
+### Added
+- **Token usage view** — scans Claude Code JSONL logs and Codex SQLite for 24h
+  token totals (input + output + cache), displayed in a dashboard card.
+- **Calendar heatmap** — 4-week usage intensity grid in the Activity view, colored
+  by daily peak utilization from persisted usage history.
+- **Multiple account support** — configure `extra_accounts` in settings to monitor
+  additional Claude/Codex subscriptions simultaneously, each with its own card.
+
 ## [Unreleased]
 
 ### Added
