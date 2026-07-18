@@ -14,6 +14,7 @@ from ..alarm import (CUSTOM_SOUND_KEY, DEFAULT_SOUND, SOUND_NAMES, Alarm, notify
 from ..models import LimitWindow, ProviderSnapshot, ResetEvent, now_utc
 from ..poller import Poller
 from ..storage import load_events, load_history
+from .. import token_stats
 from . import icons, theme as ui_theme
 from .theme import (FONT, FS_BODY, FS_DISPLAY, FS_H1, FS_H2,
                     FS_SMALL, FS_TINY, FS_TITLE, MOCHA, PROVIDER_ACCENT, R_LG,
@@ -708,6 +709,47 @@ class App(ctk.CTk):
         self.recent_list = ctk.CTkFrame(act, fg_color="transparent")
         self.recent_list.grid(row=1, column=0, sticky="ew", padx=SP_MD, pady=(0, SP_MD))
         self.recent_list.grid_columnconfigure(0, weight=1)
+
+        # Token usage summary (row 3)
+        token_card = ctk.CTkFrame(self.dash, fg_color=MOCHA["mantle"], corner_radius=R_LG,
+                                   border_width=1, border_color=MOCHA["surface1"])
+        token_card.grid(row=3, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))
+        token_card.grid_columnconfigure(0, weight=1)
+        token_head = ctk.CTkFrame(token_card, fg_color="transparent")
+        token_head.grid(row=0, column=0, sticky="ew", padx=SP_LG, pady=(SP_MD, SP_XS))
+        token_head.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(token_head, text="⚡  Token usage (24h)", font=(FONT, FS_TITLE, "bold"),
+                     text_color=MOCHA["text"], anchor="w").grid(row=0, column=0, sticky="w")
+        self._token_body = ctk.CTkFrame(token_card, fg_color="transparent")
+        self._token_body.grid(row=1, column=0, sticky="ew", padx=SP_LG, pady=(0, SP_MD))
+        self._token_body.grid_columnconfigure(0, weight=1)
+        self._token_body.grid_columnconfigure(1, weight=1)
+        self._token_body.grid_columnconfigure(2, weight=1)
+        self._token_total_label = ctk.CTkLabel(self._token_body, text="--",
+                                                font=(FONT, FS_H2, "bold"), text_color=MOCHA["mauve"])
+        self._token_total_label.grid(row=0, column=0, sticky="w")
+        self._token_claude_label = ctk.CTkLabel(self._token_body, text="Claude: --",
+                                                 font=(FONT, FS_BODY), text_color=MOCHA["text"])
+        self._token_claude_label.grid(row=0, column=1)
+        self._token_codex_label = ctk.CTkLabel(self._token_body, text="Codex: --",
+                                                font=(FONT, FS_BODY), text_color=MOCHA["text"])
+        self._token_codex_label.grid(row=0, column=2, sticky="e")
+        self.after(500, self._refresh_token_stats)
+
+    def _refresh_token_stats(self):
+        """Scan token usage files in a thread to avoid blocking GUI."""
+        import threading
+        def _scan():
+            stats = token_stats.collect(since_hours=24.0)
+            self.after(0, self._display_token_stats, stats)
+        threading.Thread(target=_scan, daemon=True).start()
+
+    def _display_token_stats(self, stats):
+        self._token_total_label.configure(text=f"{stats.formatted_total()} tokens")
+        self._token_claude_label.configure(
+            text=f"Claude: {stats.claude.formatted()} ({stats.claude.sessions} sessions)")
+        self._token_codex_label.configure(
+            text=f"Codex: {stats.codex.formatted()} ({stats.codex.sessions} sessions)")
 
     def _build_activity_view(self):
         self.activity = ctk.CTkFrame(self.body, fg_color="transparent")

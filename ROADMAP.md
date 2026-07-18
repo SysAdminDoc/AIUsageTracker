@@ -2,10 +2,6 @@
 
 Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 = operator/product-gated.
 
-## Next
-
-- 🤖 **ccusage-style token/cost view** — read local `~/.claude/projects/**/*.jsonl` and `~/.codex/state_5.sqlite` for token/cost totals to complement the account-window view.
-
 ## Considering
 
 - 🔧 **Cookie/session fallback for CLI-less users** — support users who only use the web apps (no Claude Code / Codex CLI) via a manual `sessionKey` paste or Firefox cookie import. Deliberately avoids Chrome v20 app-bound DPAPI decryption.
