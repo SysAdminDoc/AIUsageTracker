@@ -395,6 +395,8 @@ class App(ctk.CTk):
         self._alarm = Alarm()
         self._tray = None
         self._burn_samples: dict[str, deque] = {}  # key -> deque of (timestamp, pct)
+        self._pending_resets: list[ResetEvent] = []
+        self._reset_debounce_id = None
         self._view = "dashboard"
         self._settings_dialog = None
         self._refresh_pending: set[str] = set()
@@ -791,7 +793,21 @@ class App(ctk.CTk):
             self._render_activity()
         if not alarming:
             return
-        labels = ", ".join(f"{PROVIDER_TITLES.get(e.provider, e.provider)} {e.label}" for e in alarming)
+        self._pending_resets.extend(alarming)
+        if self._reset_debounce_id is not None:
+            try:
+                self.after_cancel(self._reset_debounce_id)
+            except Exception:
+                pass
+        self._reset_debounce_id = self.after(5000, self._fire_aggregated_reset)
+
+    def _fire_aggregated_reset(self):
+        self._reset_debounce_id = None
+        if not self._pending_resets:
+            return
+        events = list(self._pending_resets)
+        self._pending_resets.clear()
+        labels = ", ".join(f"{PROVIDER_TITLES.get(e.provider, e.provider)} {e.label}" for e in events)
         self.banner_label.configure(text=f"Usage reset: {labels}")
         self.banner.grid(row=1, column=0, sticky="ew", padx=SP_XL, pady=(SP_XS, SP_XS))
         if self.settings.get("alarm_sound", True):
@@ -953,7 +969,7 @@ class App(ctk.CTk):
         try:
             for after_id in (self._theme_rebuild_id, self._refresh_timeout_id,
                              self._drain_after_id, self._tick_after_id,
-                             self._chrome_after_id):
+                             self._chrome_after_id, self._reset_debounce_id):
                 if after_id is not None:
                     try:
                         self.after_cancel(after_id)

@@ -36,13 +36,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: Every successful poll appends a timestamped record; records older than 30 days auto-pruned; file stays under 5MB.
   Complexity: M
 
-- [ ] P2 — **Alert aggregation (group simultaneous resets)**
-  Why: When Claude and Codex windows reset within 60s of each other, user gets 2+ separate alarms back-to-back. Should consolidate into one "Both tools reset" notification.
-  Evidence: Notification UX best practice (PagerDuty, Icinga alert-fatigue guides); iStat Menus groups alerts.
-  Touches: `poller.py` or `gui/app.py` (debounce/group pending reset events within 60s window before alarming)
-  Acceptance: Two resets within 60s produce one grouped alarm/toast/banner instead of two separate ones.
-  Complexity: S
-
 - [ ] P2 — **PyInstaller exe size reduction**
   Why: 45MB is large for a monitoring widget. Competitors achieve 2-6MB. Clean venv + UPX + module exclusions can reach ~20MB.
   Evidence: jens-duttke at ~2MB (compiled TS); claudeusagewin at ~6MB (.NET). PyInstaller docs on --exclude-module + UPX.
