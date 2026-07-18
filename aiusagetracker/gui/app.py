@@ -12,7 +12,7 @@ from .. import __version__, config
 from ..alarm import (DEFAULT_SOUND, SOUND_NAMES, Alarm, notify, preview)
 from ..models import LimitWindow, ProviderSnapshot, ResetEvent, now_utc
 from ..poller import Poller
-from ..storage import load_events
+from ..storage import load_events, load_history
 from . import icons, theme as ui_theme
 from .theme import (FONT, FS_BODY, FS_DISPLAY, FS_H1, FS_H2,
                     FS_SMALL, FS_TINY, FS_TITLE, MOCHA, PROVIDER_ACCENT, R_LG,
@@ -210,6 +210,38 @@ class InsightMetric(ctk.CTkFrame):
         self.sub.configure(text=sub)
 
 
+class _Sparkline(ctk.CTkCanvas):
+    """Tiny inline line chart showing last 24h of utilization for one window."""
+
+    WIDTH = 120
+    HEIGHT = 20
+
+    def __init__(self, master, window_key: str, color: str):
+        super().__init__(master, width=self.WIDTH, height=self.HEIGHT,
+                         bg=MOCHA["surface0"], highlightthickness=0)
+        self._color = color
+        self._draw(window_key)
+
+    def _draw(self, key: str):
+        history = load_history(since_hours=24.0)
+        points = []
+        for rec in history:
+            for w in rec.get("windows", []):
+                if w.get("key") == key:
+                    points.append(w.get("pct", 0))
+        if len(points) < 2:
+            return
+        w, h = self.WIDTH, self.HEIGHT
+        pad = 2
+        step = (w - 2 * pad) / (len(points) - 1)
+        coords = []
+        for i, pct in enumerate(points):
+            x = pad + i * step
+            y = pad + (h - 2 * pad) * (1.0 - pct / 100.0)
+            coords.extend([x, y])
+        self.create_line(*coords, fill=self._color, width=1.5, smooth=True)
+
+
 class LimitRow(ctk.CTkFrame):
     """One quota window with a strong usage value and compact alarm control."""
 
@@ -257,7 +289,11 @@ class LimitRow(ctk.CTkFrame):
                                       progress_color=sev, fg_color=MOCHA["surface2"])
         self.bar.set(min(1.0, window.utilization / 100))
         self.bar.grid(row=2, column=1, columnspan=2, sticky="ew",
-                      padx=(SP_MD, SP_SM), pady=(0, SP_MD))
+                      padx=(SP_MD, SP_SM), pady=(0, 4))
+
+        self.sparkline = _Sparkline(self, window.key, sev)
+        self.sparkline.grid(row=3, column=1, columnspan=2, sticky="ew",
+                            padx=(SP_MD, SP_SM), pady=(0, SP_MD))
         self.refresh_countdown()
 
     def _style_toggle(self):
