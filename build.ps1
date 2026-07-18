@@ -21,9 +21,11 @@ python -m PyInstaller `
     --onefile `
     --windowed `
     --name AIUsageTracker `
+    --icon "assets\app-logo.ico" `
+    --add-data "assets\app-logo.png;assets" `
+    --add-data "assets\app-logo.ico;assets" `
     --collect-all customtkinter `
     --collect-submodules windows_toasts `
-    --hidden-import plyer.platforms.win.notification `
     --clean --noconfirm `
     run.py
 

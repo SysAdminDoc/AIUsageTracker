@@ -43,13 +43,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: User can configure a shell command in Settings that executes when any window resets; command receives provider/window/utilization as args.
   Complexity: M
 
-- [ ] P1 — **Remove plyer dependency**
-  Why: plyer is unmaintained (no release in 12+ months); windows-toasts already handles all notification needs on Windows. Dead dependency = supply-chain risk.
-  Evidence: PyPI shows plyer 2.1.0 last released 2023; kivy/plyer GitHub issue backlog growing.
-  Touches: `requirements.txt`, `alarm.py` (remove plyer import/fallback branch), `build.ps1` (remove plyer hidden-import)
-  Acceptance: `pip install` no longer pulls plyer; notifications still work via windows-toasts; non-Windows gracefully no-ops.
-  Complexity: S
-
 - [ ] P2 — **Usage sparklines in LimitRow cards**
   Why: Current bars show point-in-time snapshot only. A tiny sparkline (last 24h of polls) shows trend — is usage accelerating or flat? Competitors (CodexBar, phuryn/claude-usage) ship inline charts.
   Evidence: CodexBar inline spend charts; phuryn/claude-usage Chart.js graphs; community demand for history (Product Hunt 239 upvotes).

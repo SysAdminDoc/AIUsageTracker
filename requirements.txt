@@ -3,4 +3,3 @@ customtkinter>=5.2
 pystray>=0.19
 pillow>=12.3.0
 windows-toasts>=1.1; platform_system=='Windows'
-plyer>=2.1

@@ -197,11 +197,5 @@ def notify(title: str, message: str) -> None:
             t = Toast()
             t.text_fields = [title, message]
             _TOASTER.show_toast(t)
-            return
         except Exception:
             pass
-    try:
-        from plyer import notification
-        notification.notify(title=title, message=message, app_name=config.APP_NAME, timeout=10)
-    except Exception:
-        pass
