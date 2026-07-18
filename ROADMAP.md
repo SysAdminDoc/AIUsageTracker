@@ -36,13 +36,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: Activity view shows a 7-row × N-week grid color-coded by daily peak utilization; tooltip shows exact values.
   Complexity: L
 
-- [ ] P3 — **Telegram / Discord alert forwarding**
-  Why: Users are often AFK (phone, different PC) when limits reset. Push notification to phone ensures they resume immediately.
-  Evidence: en4ble1337/codex-usage-monitor ships Discord/Telegram alerts; Javis603/token-monitor has Discord Rich Presence.
-  Touches: `config.py` (webhook URL settings), `alarm.py` (new `forward_alert()` that POSTs to webhook on reset)
-  Acceptance: User configures a Discord/Telegram webhook URL in Settings; reset events trigger a POST with provider + window + utilization info.
-  Complexity: M
-
 
 ## Done
 

@@ -63,6 +63,8 @@ DEFAULT_SETTINGS = {
     "on_threshold_command": "",
     # Export a JSON status file each poll for external tool integration.
     "export_status": True,
+    # Webhook URL for remote alerts (Discord/Telegram). Empty = disabled.
+    "webhook_url": "",
 }
 
 

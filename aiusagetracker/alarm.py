@@ -1,4 +1,4 @@
-"""Audible alarm (multiple selectable sounds) + native Windows toasts.
+"""Audible alarm (multiple selectable sounds) + native Windows toasts + webhook.
 
 Sounds are synthesized once and cached as loopable WAVs in the app data dir, so
 there are no binary audio assets to ship. Everything degrades gracefully: on a
@@ -6,6 +6,7 @@ non-Windows box or if a backend import fails, calls become no-ops.
 """
 from __future__ import annotations
 
+import json
 import math
 import struct
 import sys
@@ -199,3 +200,26 @@ def notify(title: str, message: str) -> None:
             _TOASTER.show_toast(t)
         except Exception:
             pass
+
+
+def send_webhook(url: str, title: str, message: str) -> None:
+    """POST a reset/threshold alert to a Discord or Telegram webhook."""
+    if not url or not url.strip():
+        return
+    threading.Thread(target=_webhook_post, args=(url.strip(), title, message),
+                     daemon=True).start()
+
+
+def _webhook_post(url: str, title: str, message: str) -> None:
+    try:
+        import httpx2 as httpx
+        if "discord" in url.lower():
+            payload = {"content": f"**{title}**\n{message}"}
+        elif "telegram" in url.lower():
+            payload = {"text": f"*{title}*\n{message}", "parse_mode": "Markdown"}
+        else:
+            payload = {"title": title, "message": message}
+        with httpx.Client(timeout=httpx.Timeout(10.0)) as client:
+            client.post(url, json=payload)
+    except Exception:
+        pass

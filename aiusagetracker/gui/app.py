@@ -9,7 +9,7 @@ from datetime import datetime
 import customtkinter as ctk
 
 from .. import __version__, config
-from ..alarm import (DEFAULT_SOUND, SOUND_NAMES, Alarm, notify, preview)
+from ..alarm import (DEFAULT_SOUND, SOUND_NAMES, Alarm, notify, preview, send_webhook)
 from ..models import LimitWindow, ProviderSnapshot, ResetEvent, now_utc
 from ..poller import Poller
 from ..storage import load_events, load_history
@@ -865,6 +865,9 @@ class App(ctk.CTk):
                               sound=self.settings.get("alarm_sound_name", DEFAULT_SOUND))
         if self.settings.get("toast", True):
             notify("AI Usage Reset", f"{labels} has reset.")
+        webhook_url = self.settings.get("webhook_url", "")
+        if webhook_url:
+            send_webhook(webhook_url, "AI Usage Reset", f"{labels} has reset.")
         try:
             self.deiconify(); self.lift(); self.focus_force()
         except Exception:
