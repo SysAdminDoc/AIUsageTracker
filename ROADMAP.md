@@ -8,15 +8,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 - 🔧 **Gemini / other providers** — generalize the provider interface to add more quota sources.
 - 🔧 **Optional token refresh (opt-in, safe)** — refresh-and-verify-to-a-copy before writing back, to keep polling when the CLIs aren't running. Gated because refresh-token rotation risks the live CLI login.
 
-## Research-Driven Additions (2026-07-18)
-
-- [ ] P2 — **Multiple account/credential support**
-  Why: Power users run 2+ Claude/Codex subscriptions to workaround rate limits; need fast switching or simultaneous monitoring.
-  Evidence: Medium article "Running Two Claude Code Subs Side by Side"; community discussions on multi-profile workarounds.
-  Touches: `auth.py` (accept list of credential paths), `config.py` (accounts[] setting), `gui/app.py` (account selector or multi-card layout)
-  Acceptance: User can add multiple credential file paths in Settings; each account appears as a separate provider card.
-  Complexity: L
-
 
 ## Done
 

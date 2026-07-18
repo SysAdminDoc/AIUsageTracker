@@ -24,6 +24,20 @@ from .theme import (FONT, FS_BODY, FS_DISPLAY, FS_H1, FS_H2,
 ctk.set_appearance_mode("dark")
 
 PROVIDER_TITLES = {"claude": "Claude", "codex": "Codex"}
+
+
+def _provider_title(key: str) -> str:
+    if key in PROVIDER_TITLES:
+        return PROVIDER_TITLES[key]
+    if ":" in key:
+        base, name = key.split(":", 1)
+        base_title = PROVIDER_TITLES.get(base, base.title())
+        return f"{base_title} ({name})"
+    return key.title()
+
+
+def _provider_base(key: str) -> str:
+    return key.split(":")[0] if ":" in key else key
 STATUS_TEXT = {"ok": "Connected", "auth_expired": "Login expired",
                "no_credentials": "Not signed in", "error": "Unavailable"}
 
@@ -338,7 +352,8 @@ class ProviderCard(ctk.CTkFrame):
         super().__init__(master, fg_color=MOCHA["mantle"], corner_radius=R_LG,
                          border_width=1, border_color=MOCHA["surface1"])
         self.name = name
-        self.accent = PROVIDER_ACCENT[name]
+        base = _provider_base(name)
+        self.accent = PROVIDER_ACCENT.get(base, PROVIDER_ACCENT.get("claude", "#888"))
         self.grid_columnconfigure(0, weight=1)
 
         ctk.CTkFrame(self, height=4, fg_color=self.accent, corner_radius=R_XS).grid(
@@ -347,8 +362,8 @@ class ProviderCard(ctk.CTkFrame):
         head = ctk.CTkFrame(self, fg_color="transparent")
         head.grid(row=1, column=0, sticky="ew", padx=SP_LG, pady=(SP_LG, SP_MD))
         head.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(head, text="", image=tile_image(name, 38)).grid(row=0, column=0, rowspan=2, padx=(0, SP_MD))
-        ctk.CTkLabel(head, text=PROVIDER_TITLES[name], font=(FONT, FS_H2, "bold"),
+        ctk.CTkLabel(head, text="", image=tile_image(base, 38)).grid(row=0, column=0, rowspan=2, padx=(0, SP_MD))
+        ctk.CTkLabel(head, text=_provider_title(name), font=(FONT, FS_H2, "bold"),
                      text_color=MOCHA["text"], anchor="w").grid(row=0, column=1, sticky="sw")
         self.status = ctk.CTkLabel(head, text="Connecting...", font=(FONT, FS_TINY),
                                    text_color=MOCHA["subtext0"], anchor="w")
@@ -665,17 +680,23 @@ class App(ctk.CTk):
         self.stat_highest = InsightMetric(insights, "Highest pressure", "↗", MOCHA["red"])
         self.stat_highest.grid(row=0, column=2, sticky="ew", padx=SP_LG)
 
-        providers = ctk.CTkFrame(self.dash, fg_color="transparent")
-        providers.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_MD))
-        providers.grid_columnconfigure(0, weight=1, uniform="prov")
-        providers.grid_columnconfigure(1, weight=1, uniform="prov")
-        self.provider_cards = {
-            "claude": ProviderCard(providers, "claude"),
-            "codex": ProviderCard(providers, "codex"),
-        }
-        providers.grid_rowconfigure(0, weight=1)
-        self.provider_cards["claude"].grid(row=0, column=0, sticky="nsew", padx=(0, SP_SM))
-        self.provider_cards["codex"].grid(row=0, column=1, sticky="nsew", padx=(SP_SM, 0))
+        self._providers_frame = ctk.CTkFrame(self.dash, fg_color="transparent")
+        self._providers_frame.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_MD))
+        provider_keys = ["claude", "codex"]
+        for acct in self.settings.get("extra_accounts", []):
+            aid = acct.get("name", "")
+            ptype = acct.get("provider", "")
+            if aid and ptype:
+                provider_keys.append(f"{ptype}:{aid}")
+        for i in range(len(provider_keys)):
+            self._providers_frame.grid_columnconfigure(i, weight=1, uniform="prov")
+        self.provider_cards = {}
+        self._providers_frame.grid_rowconfigure(0, weight=1)
+        for i, pkey in enumerate(provider_keys):
+            card = ProviderCard(self._providers_frame, pkey)
+            card.grid(row=0, column=i, sticky="nsew",
+                      padx=(0 if i == 0 else SP_SM, 0 if i == len(provider_keys) - 1 else 0))
+            self.provider_cards[pkey] = card
 
         lower = ctk.CTkFrame(self.dash, fg_color="transparent")
         lower.grid(row=2, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))

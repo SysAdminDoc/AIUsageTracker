@@ -68,6 +68,8 @@ DEFAULT_SETTINGS = {
     "export_status": True,
     # Webhook URL for remote alerts (Discord/Telegram). Empty = disabled.
     "webhook_url": "",
+    # Extra accounts: [{"name": "work", "provider": "claude", "credential_path": "C:/..."}]
+    "extra_accounts": [],
 }
 
 

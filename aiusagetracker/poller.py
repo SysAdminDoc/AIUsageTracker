@@ -18,10 +18,26 @@ from .reset import ResetTracker
 Callback = Callable[..., None]
 
 
+def _build_providers(settings: dict) -> dict[str, object]:
+    """Build provider instances including any extra accounts from settings."""
+    providers = {"claude": ClaudeProvider(), "codex": CodexProvider()}
+    for acct in settings.get("extra_accounts", []):
+        ptype = acct.get("provider", "")
+        path = acct.get("credential_path", "")
+        aid = acct.get("name", "")
+        if not path or not aid:
+            continue
+        if ptype == "claude":
+            providers[f"claude:{aid}"] = ClaudeProvider(credential_path=path, account_id=aid)
+        elif ptype == "codex":
+            providers[f"codex:{aid}"] = CodexProvider(credential_path=path, account_id=aid)
+    return providers
+
+
 class Poller:
     def __init__(self, settings: dict) -> None:
         self.settings = settings
-        self._providers = {"claude": ClaudeProvider(), "codex": CodexProvider()}
+        self._providers = _build_providers(settings)
         self._tracker = ResetTracker()
         self._snapshots: dict[str, ProviderSnapshot] = {}
         self._last_poll: dict[str, object] = {}
