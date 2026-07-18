@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiusagetracker"
+version = "0.1.0"
+description = "Monitor Claude & Codex usage windows and alarm the instant they reset."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "SysAdminDoc", email = "matt_parker@outlook.com" }]
+dependencies = [
+    "httpx>=0.27",
+    "customtkinter>=5.2",
+    "pystray>=0.19",
+    "pillow>=10.0",
+    "windows-toasts>=1.1; platform_system=='Windows'",
+    "plyer>=2.1",
+]
+
+[project.scripts]
+aiusagetracker = "aiusagetracker.cli:main"
+
+[project.gui-scripts]
+aiusagetracker-gui = "aiusagetracker.gui.app:main"
+
+[tool.setuptools.packages.find]
+include = ["aiusagetracker*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

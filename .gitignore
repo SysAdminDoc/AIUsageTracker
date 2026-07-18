@@ -1,0 +1,35 @@
+# AIUsageTracker
+
+# --- Local working notes (never commit) ---
+CLAUDE.md
+CODEX_CHANGELOG.md
+.claude/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# --- Build artifacts ---
+build/
+dist/
+*.spec.bak
+
+# --- App runtime data / secrets (must never be committed) ---
+*.log
+_smoke_*.png
+_gui*.log
+settings.json
+reset_events.jsonl
+snapshot_*.json
+
+# PyInstaller generated spec
+*.spec
