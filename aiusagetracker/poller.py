@@ -110,6 +110,8 @@ class Poller:
         if not collected:
             return
 
+        storage.append_history([{"key": w.key, "pct": w.utilization} for w in collected])
+
         # Warn on high utilization (once per period until it resets).
         warn_at = float(self.settings.get("warn_toast_at", 90))
         for w in collected:
@@ -164,6 +166,7 @@ class Poller:
         return base
 
     def _run(self) -> None:
+        storage.prune_history()
         # First cycle immediately.
         try:
             self._cycle(respect_floor=False)

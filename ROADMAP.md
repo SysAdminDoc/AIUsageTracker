@@ -29,13 +29,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: Each usage bar has a ~100x20px sparkline showing last 24h of utilization readings; updates on each poll.
   Complexity: L
 
-- [ ] P2 — **Historical usage persistence (time-series store)**
-  Why: Enables sparklines, heatmaps, burn-rate calculation, and trend analysis. Current storage only keeps reset events, not utilization readings over time.
-  Evidence: Required foundation for sparklines, ETA forecast, and calendar heatmap features. phuryn/claude-usage and token-monitor both persist historical data.
-  Touches: `storage.py` (new `append_snapshot()` writing timestamped utilization to `usage_history.jsonl` or SQLite), `config.py` (retention policy setting)
-  Acceptance: Every successful poll appends a timestamped record; records older than 30 days auto-pruned; file stays under 5MB.
-  Complexity: M
-
 - [ ] P2 — **PyInstaller exe size reduction**
   Why: 45MB is large for a monitoring widget. Competitors achieve 2-6MB. Clean venv + UPX + module exclusions can reach ~20MB.
   Evidence: jens-duttke at ~2MB (compiled TS); claudeusagewin at ~6MB (.NET). PyInstaller docs on --exclude-module + UPX.

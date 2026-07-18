@@ -30,9 +30,12 @@ _gui*.log
 settings.json
 reset_events.jsonl
 snapshot_*.json
+usage_history.jsonl
 
 # PyInstaller generated spec
 *.spec
 
 # Screenshots may contain real usage data - keep them out of the repo
 assets/*.png
+# The generated brand mark is an application asset, not a usage screenshot.
+!assets/app-logo.png
