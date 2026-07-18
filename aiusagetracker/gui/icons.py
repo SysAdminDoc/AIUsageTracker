@@ -1,13 +1,15 @@
-"""Runtime-generated icons and brand tiles (no binary assets committed).
+"""Application logo plus runtime-generated provider and control icons.
 
-All marks are drawn with PIL at 4x supersampling and downscaled with LANCZOS for
-crisp anti-aliased edges. The provider tiles are original geometric renderings in
-each brand's colour and motif (Claude sunburst, OpenAI hexafoil) used to identify
-the provider in the UI - not official trademarked asset files.
+The app logo is loaded from the packaged brand asset. Supporting marks are drawn
+with PIL at 4x supersampling and downscaled with LANCZOS for crisp anti-aliased
+edges. Provider tiles are original geometric renderings used to identify each
+source in the UI, not official trademarked asset files.
 """
 from __future__ import annotations
 
 import math
+import sys
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -19,6 +21,14 @@ SS = 4  # supersample factor
 CLAUDE_ORANGE = (217, 119, 87, 255)   # Claude "clay" orange
 CODEX_INK = (13, 13, 15, 255)         # OpenAI monochrome on near-black
 WHITE = (255, 255, 255, 255)
+APP_LOGO_PNG = "app-logo.png"
+APP_LOGO_ICO = "app-logo.ico"
+_APP_LOGO_MASTER: Image.Image | None = None
+
+
+def _asset_path(name: str) -> Path:
+    root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
+    return root / "assets" / name
 
 
 def _canvas(size: int):
@@ -70,7 +80,17 @@ def codex_tile(size: int = 128) -> Image.Image:
 
 
 def app_tile(size: int = 128) -> Image.Image:
-    """App mark: mauve rounded tile with a white gauge arc + needle."""
+    """Return the generated AIUsageTracker brand mark at the requested size."""
+    global _APP_LOGO_MASTER
+    if _APP_LOGO_MASTER is None:
+        path = _asset_path(APP_LOGO_PNG)
+        if path.exists():
+            with Image.open(path) as source:
+                _APP_LOGO_MASTER = source.convert("RGBA").copy()
+    if _APP_LOGO_MASTER is not None:
+        return _APP_LOGO_MASTER.resize((size, size), Image.LANCZOS)
+
+    # Development fallback if the packaged asset is unavailable.
     img, d, s = _canvas(size)
     _rounded_tile(d, s, _hex(MOCHA["mauve"]))
     box = [s * 0.24, s * 0.26, s * 0.76, s * 0.78]
@@ -84,6 +104,28 @@ def app_tile(size: int = 128) -> Image.Image:
     return img.resize((size, size), Image.LANCZOS)
 
 
+def bell_icon(size: int = 32, color: str = "#66d9e8", enabled: bool = True) -> Image.Image:
+    """Small outlined bell for the per-window alarm control."""
+    img, d, s = _canvas(size)
+    rgba = _hex(color)
+    stroke = max(4, int(s * 0.07))
+    pts = [
+        (s * 0.50, s * 0.18), (s * 0.40, s * 0.21),
+        (s * 0.32, s * 0.34), (s * 0.32, s * 0.56),
+        (s * 0.23, s * 0.70), (s * 0.77, s * 0.70),
+        (s * 0.68, s * 0.56), (s * 0.68, s * 0.34),
+        (s * 0.60, s * 0.21), (s * 0.50, s * 0.18),
+    ]
+    d.line(pts, fill=rgba, width=stroke, joint="curve")
+    d.line([(s * 0.28, s * 0.70), (s * 0.72, s * 0.70)], fill=rgba, width=stroke)
+    d.arc([s * 0.43, s * 0.68, s * 0.57, s * 0.83], start=0, end=180,
+          fill=rgba, width=stroke)
+    if not enabled:
+        d.line([(s * 0.20, s * 0.20), (s * 0.80, s * 0.80)], fill=rgba,
+               width=stroke + 1)
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def _hex(h: str):
     h = h.lstrip("#")
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
@@ -94,8 +136,57 @@ def make_icon(size: int = 64) -> Image.Image:
     return app_tile(size)
 
 
+_SEVERITY_COLORS = {
+    "green": (76, 175, 80, 255),
+    "yellow": (251, 192, 45, 255),
+    "orange": (255, 152, 0, 255),
+    "red": (244, 67, 54, 255),
+}
+
+
+def _severity_for_pct(pct: float) -> str:
+    if pct >= 90:
+        return "red"
+    if pct >= 75:
+        return "orange"
+    if pct >= 50:
+        return "yellow"
+    return "green"
+
+
+def tray_status_icon(size: int = 64, utilization_pct: float | None = None) -> Image.Image:
+    """Render a tray icon colored by severity with usage % overlay text."""
+    if utilization_pct is None:
+        return app_tile(size)
+
+    img, d, s = _canvas(size)
+    severity = _severity_for_pct(utilization_pct)
+    fill = _SEVERITY_COLORS[severity]
+    _rounded_tile(d, s, fill)
+
+    label = str(int(utilization_pct))
+    try:
+        from PIL import ImageFont
+        font_size = int(s * 0.55) if len(label) <= 2 else int(s * 0.42)
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except Exception:
+        font = ImageDraw.Draw(img).getfont()
+
+    bbox = d.textbbox((0, 0), label, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x = (s - tw) / 2 - bbox[0]
+    y = (s - th) / 2 - bbox[1]
+    d.text((x, y), label, fill=WHITE, font=font)
+
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def ensure_ico() -> str:
-    path = config.data_dir() / "app.ico"
+    packaged = _asset_path(APP_LOGO_ICO)
+    if packaged.exists():
+        return str(packaged)
+
+    path = config.data_dir() / "app-logo-v1.ico"
     if not path.exists():
         try:
             base = app_tile(256)

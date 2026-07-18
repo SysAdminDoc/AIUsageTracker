@@ -12,8 +12,8 @@ from ..alarm import (DEFAULT_SOUND, SOUND_NAMES, Alarm, notify, preview)
 from ..models import LimitWindow, ProviderSnapshot, ResetEvent, now_utc
 from ..poller import Poller
 from ..storage import load_events
-from . import icons
-from .theme import (BORDER, BORDER_SOFT, FONT, FS_BODY, FS_DISPLAY, FS_H1, FS_H2,
+from . import icons, theme as ui_theme
+from .theme import (FONT, FS_BODY, FS_DISPLAY, FS_H1, FS_H2,
                     FS_SMALL, FS_TINY, FS_TITLE, MOCHA, PROVIDER_ACCENT, R_LG,
                     R_MD, R_SM, R_XS, SEVERITY_COLOR, SP_LG, SP_MD, SP_SM, SP_XL,
                     SP_XS, STATUS_COLOR)
@@ -36,6 +36,15 @@ def tile_image(kind: str, size: int):
             pil = icons.codex_tile(size * 3)
         else:
             pil = icons.app_tile(size * 3)
+        _IMG_CACHE[key] = ctk.CTkImage(light_image=pil, dark_image=pil, size=(size, size))
+    return _IMG_CACHE[key]
+
+
+def bell_image(enabled: bool, size: int = 18):
+    key = ("bell", enabled, size)
+    if key not in _IMG_CACHE:
+        color = MOCHA["blue"] if enabled else MOCHA["subtext0"]
+        pil = icons.bell_icon(size * 3, color, enabled)
         _IMG_CACHE[key] = ctk.CTkImage(light_image=pil, dark_image=pil, size=(size, size))
     return _IMG_CACHE[key]
 
@@ -67,29 +76,133 @@ def fmt_local(dt) -> str:
         return str(dt)
 
 
+def set_windows_chrome(window, theme_key: str):
+    """Match a Tk window's native caption to the selected application theme."""
+    try:
+        import ctypes
+        from ctypes import byref, c_int, sizeof
+
+        def colorref(value: str) -> int:
+            value = value.lstrip("#")
+            red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+            return red | (green << 8) | (blue << 16)
+
+        hwnd = ctypes.windll.user32.GetParent(window.winfo_id()) or window.winfo_id()
+        enabled = c_int(1 if ui_theme.appearance_for(theme_key) == "dark" else 0)
+        for attribute in (20, 19):
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, attribute, byref(enabled), sizeof(enabled))
+        caption = c_int(colorref(MOCHA["crust"]))
+        text = c_int(colorref(MOCHA["text"]))
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(caption), sizeof(caption))
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 36, byref(text), sizeof(text))
+    except Exception:
+        pass
+
+
+class ToolTip:
+    """Small delayed helper for icon-only controls."""
+
+    def __init__(self, widget, text, delay: int = 450):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self._after_id = None
+        self._tip = None
+        widget.bind("<Enter>", self._schedule, add="+")
+        widget.bind("<Leave>", self._hide, add="+")
+        widget.bind("<ButtonPress>", self._hide, add="+")
+
+    def _schedule(self, _event=None):
+        self._hide()
+        self._after_id = self.widget.after(self.delay, self._show)
+
+    def _show(self):
+        self._after_id = None
+        try:
+            exists = self.widget.winfo_exists()
+        except Exception:
+            return
+        if not exists:
+            return
+        message = self.text() if callable(self.text) else self.text
+        tip = ctk.CTkToplevel(self.widget)
+        tip.overrideredirect(True)
+        tip.attributes("-topmost", True)
+        ctk.CTkLabel(tip, text=message, font=(FONT, FS_TINY),
+                     fg_color=MOCHA["surface1"], text_color=MOCHA["text"],
+                     corner_radius=R_SM, padx=SP_SM, pady=SP_XS).pack()
+        tip.update_idletasks()
+        x = self.widget.winfo_rootx() + self.widget.winfo_width() // 2 - tip.winfo_width() // 2
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+        tip.geometry(f"+{max(4, x)}+{max(4, y)}")
+        self._tip = tip
+
+    def _hide(self, _event=None):
+        if self._after_id is not None:
+            try:
+                self.widget.after_cancel(self._after_id)
+            except Exception:
+                pass
+            self._after_id = None
+        if self._tip is not None:
+            try:
+                self._tip.destroy()
+            except Exception:
+                pass
+            self._tip = None
+
+
 # ---------------------------------------------------------------------------
 # Reusable widgets
 # ---------------------------------------------------------------------------
 class StatCard(ctk.CTkFrame):
-    """A top-row summary metric card."""
+    """Compact summary metric used in the dashboard's lower band."""
 
     def __init__(self, master, title: str, icon: str, accent: str):
         super().__init__(master, fg_color=MOCHA["mantle"], corner_radius=R_LG,
-                         border_width=1, border_color=BORDER_SOFT)
-        self.grid_columnconfigure(1, weight=1)
-        badge = ctk.CTkFrame(self, width=42, height=42, fg_color=MOCHA["surface0"],
-                             corner_radius=R_MD)
-        badge.grid(row=0, column=0, rowspan=3, padx=(SP_LG, SP_MD), pady=SP_LG)
+                         border_width=1, border_color=MOCHA["surface1"])
+        self.grid_columnconfigure(0, weight=1)
+        badge = ctk.CTkFrame(self, width=34, height=34, fg_color=MOCHA["surface0"],
+                             corner_radius=R_SM, border_width=1, border_color=accent)
+        badge.grid(row=0, column=0, pady=(SP_LG, SP_SM))
         badge.grid_propagate(False)
-        ctk.CTkLabel(badge, text=icon, font=(FONT, 18), text_color=accent).place(relx=0.5, rely=0.5, anchor="center")
-        ctk.CTkLabel(self, text=title, font=(FONT, FS_TINY, "bold"), text_color=MOCHA["subtext0"],
-                     anchor="w").grid(row=0, column=1, sticky="sw", padx=(0, SP_LG), pady=(SP_LG, 0))
+        ctk.CTkLabel(badge, text=icon, font=(FONT, 16, "bold"), text_color=accent).place(
+            relx=0.5, rely=0.5, anchor="center")
+        ctk.CTkLabel(self, text=title, font=(FONT, FS_SMALL), text_color=MOCHA["subtext1"]
+                     ).grid(row=1, column=0)
         self.value = ctk.CTkLabel(self, text="--", font=(FONT, FS_DISPLAY, "bold"),
-                                  text_color=MOCHA["text"], anchor="w")
-        self.value.grid(row=1, column=1, sticky="nw", padx=(0, SP_LG))
+                                  text_color=MOCHA["text"])
+        self.value.grid(row=2, column=0, pady=(2, 0))
         self.sub = ctk.CTkLabel(self, text="", font=(FONT, FS_SMALL), text_color=MOCHA["subtext0"],
-                                anchor="w")
-        self.sub.grid(row=2, column=1, sticky="nw", padx=(0, SP_LG), pady=(0, SP_LG))
+                                wraplength=155, justify="center")
+        self.sub.grid(row=3, column=0, padx=SP_SM, pady=(0, SP_LG))
+
+    def set(self, value: str, sub: str = "", value_color: str = None):
+        self.value.configure(text=value, text_color=value_color or MOCHA["text"])
+        self.sub.configure(text=sub)
+
+
+class InsightMetric(ctk.CTkFrame):
+    """One half of the prominent dashboard insight strip."""
+
+    def __init__(self, master, title: str, icon: str, accent: str):
+        super().__init__(master, fg_color="transparent")
+        self.grid_columnconfigure(1, weight=1)
+        badge = ctk.CTkFrame(self, width=48, height=48, fg_color=MOCHA["surface0"],
+                             corner_radius=R_LG, border_width=1, border_color=accent)
+        badge.grid(row=0, column=0, rowspan=2, padx=(0, SP_LG), pady=SP_MD)
+        badge.grid_propagate(False)
+        ctk.CTkLabel(badge, text=icon, font=(FONT, 22, "bold"), text_color=accent).place(
+            relx=0.5, rely=0.5, anchor="center")
+        ctk.CTkLabel(self, text=title, font=(FONT, FS_SMALL), text_color=MOCHA["subtext1"],
+                     anchor="w").grid(row=0, column=1, sticky="sw", pady=(SP_MD, 0))
+        self.value = ctk.CTkLabel(self, text="--", font=(FONT, FS_DISPLAY, "bold"),
+                                  text_color=accent, anchor="w")
+        self.value.grid(row=1, column=1, sticky="nw", pady=(0, SP_MD))
+        self.sub = ctk.CTkLabel(self, text="Waiting for data", font=(FONT, FS_BODY),
+                                text_color=MOCHA["subtext0"], anchor="w", justify="left")
+        self.sub.grid(row=0, column=2, rowspan=2, sticky="w", padx=(SP_LG, SP_SM))
 
     def set(self, value: str, sub: str = "", value_color: str = None):
         self.value.configure(text=value, text_color=value_color or MOCHA["text"])
@@ -97,7 +210,7 @@ class StatCard(ctk.CTkFrame):
 
 
 class LimitRow(ctk.CTkFrame):
-    """One limit window: severity edge + bar + countdown + alarm toggle."""
+    """One quota window with a strong usage value and compact alarm control."""
 
     def __init__(self, master, window: LimitWindow, alarm_on: bool, on_toggle):
         super().__init__(master, fg_color=MOCHA["surface0"], corner_radius=R_MD)
@@ -107,45 +220,54 @@ class LimitRow(ctk.CTkFrame):
         self.on_toggle = on_toggle
         self.grid_columnconfigure(1, weight=1)
         sev = SEVERITY_COLOR.get(window.severity, MOCHA["green"])
-        remaining = max(0.0, 100.0 - window.utilization)
 
-        # coloured severity edge for fast scanning (height kept tiny so it
-        # stretches to the row's real content height, not CTkFrame's 200px default)
-        edge = ctk.CTkFrame(self, width=4, height=6, fg_color=sev, corner_radius=R_XS)
-        edge.grid(row=0, column=0, rowspan=3, sticky="ns", padx=(6, 0), pady=8)
+        edge = ctk.CTkFrame(self, width=3, height=6, fg_color=sev, corner_radius=R_XS)
+        edge.grid(row=0, column=0, rowspan=3, sticky="ns", padx=(7, 0), pady=9)
 
-        top = ctk.CTkFrame(self, fg_color="transparent")
-        top.grid(row=0, column=1, sticky="ew", padx=(SP_MD, SP_MD), pady=(SP_MD, 2))
-        top.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(top, text=window.label, font=(FONT, FS_BODY, "bold"),
-                     text_color=MOCHA["text"], anchor="w").grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(top, text=f"{remaining:.0f}% left", font=(FONT, FS_BODY, "bold"),
-                     text_color=sev).grid(row=0, column=1, sticky="e")
+        ctk.CTkLabel(self, text=window.label, font=(FONT, FS_TITLE, "bold"),
+                     text_color=MOCHA["text"], anchor="w", wraplength=250,
+                     justify="left").grid(row=0, column=1, sticky="w",
+                                           padx=(SP_MD, SP_SM), pady=(SP_MD, 0))
+
+        usage = ctk.CTkFrame(self, fg_color="transparent")
+        usage.grid(row=0, column=2, sticky="e", pady=(SP_SM, 0))
+        ctk.CTkLabel(usage, text=f"{window.utilization:.0f}%", font=(FONT, FS_H2, "bold"),
+                     text_color=sev).pack(side="left")
+        ctk.CTkLabel(usage, text=" used", font=(FONT, FS_TINY),
+                     text_color=MOCHA["subtext0"]).pack(side="left", pady=(5, 0))
+
+        self.alarm_btn = ctk.CTkButton(self, width=38, height=38, corner_radius=R_SM,
+                                       border_width=1, font=(FONT, 15, "bold"),
+                                       command=self._toggle)
+        self.alarm_btn.grid(row=0, column=3, rowspan=3, sticky="e",
+                            padx=(SP_MD, SP_MD), pady=SP_MD)
+        self.alarm_tip = ToolTip(
+            self.alarm_btn,
+            lambda: "Disable reset alarm" if self.alarm_on else "Enable reset alarm",
+        )
+        self._style_toggle()
+
+        self.sub = ctk.CTkLabel(self, text="", font=(FONT, FS_TINY), text_color=MOCHA["subtext0"],
+                                anchor="w")
+        self.sub.grid(row=1, column=1, columnspan=2, sticky="w",
+                      padx=(SP_MD, SP_SM), pady=(1, 5))
 
         self.bar = ctk.CTkProgressBar(self, height=8, corner_radius=R_XS,
                                       progress_color=sev, fg_color=MOCHA["surface2"])
         self.bar.set(min(1.0, window.utilization / 100))
-        self.bar.grid(row=1, column=1, sticky="ew", padx=SP_MD, pady=2)
-
-        bottom = ctk.CTkFrame(self, fg_color="transparent")
-        bottom.grid(row=2, column=1, sticky="ew", padx=SP_MD, pady=(2, SP_MD))
-        bottom.grid_columnconfigure(0, weight=1)
-        self.sub = ctk.CTkLabel(bottom, text="", font=(FONT, FS_TINY), text_color=MOCHA["subtext0"],
-                                anchor="w")
-        self.sub.grid(row=0, column=0, sticky="w")
-        self.alarm_btn = ctk.CTkButton(bottom, width=84, height=24, corner_radius=R_SM,
-                                       font=(FONT, FS_TINY, "bold"), command=self._toggle)
-        self.alarm_btn.grid(row=0, column=1, sticky="e")
-        self._style_toggle()
+        self.bar.grid(row=2, column=1, columnspan=2, sticky="ew",
+                      padx=(SP_MD, SP_SM), pady=(0, SP_MD))
         self.refresh_countdown()
 
     def _style_toggle(self):
         if self.alarm_on:
-            self.alarm_btn.configure(text="Alarm On", fg_color=MOCHA["mauve"],
-                                     hover_color=MOCHA["lavender"], text_color=MOCHA["crust"])
+            self.alarm_btn.configure(text="", image=bell_image(True), fg_color=MOCHA["surface1"],
+                                     hover_color=MOCHA["surface2"], border_color=MOCHA["blue"],
+                                     text_color=MOCHA["blue"])
         else:
-            self.alarm_btn.configure(text="Alarm Off", fg_color=MOCHA["surface2"],
-                                     hover_color=MOCHA["overlay0"], text_color=MOCHA["subtext0"])
+            self.alarm_btn.configure(text="", image=bell_image(False), fg_color=MOCHA["surface0"],
+                                     hover_color=MOCHA["surface1"], border_color=MOCHA["surface2"],
+                                     text_color=MOCHA["subtext0"])
 
     def _toggle(self):
         self.alarm_on = not self.alarm_on
@@ -155,7 +277,7 @@ class LimitRow(ctk.CTkFrame):
 
     def refresh_countdown(self):
         secs = self.resets_at and (self.resets_at - now_utc()).total_seconds()
-        self.sub.configure(text=f"resets in {fmt_countdown(secs)}   ·   {fmt_local(self.resets_at)}")
+        self.sub.configure(text=f"Resets in {fmt_countdown(secs)}   ·   {fmt_local(self.resets_at)}")
 
 
 class ProviderCard(ctk.CTkFrame):
@@ -163,32 +285,35 @@ class ProviderCard(ctk.CTkFrame):
 
     def __init__(self, master, name: str):
         super().__init__(master, fg_color=MOCHA["mantle"], corner_radius=R_LG,
-                         border_width=1, border_color=BORDER_SOFT)
+                         border_width=1, border_color=MOCHA["surface1"])
         self.name = name
         self.accent = PROVIDER_ACCENT[name]
         self.grid_columnconfigure(0, weight=1)
 
+        ctk.CTkFrame(self, height=4, fg_color=self.accent, corner_radius=R_XS).grid(
+            row=0, column=0, sticky="ew", padx=1, pady=(1, 0))
+
         head = ctk.CTkFrame(self, fg_color="transparent")
-        head.grid(row=0, column=0, sticky="ew", padx=SP_LG, pady=(SP_LG, SP_SM))
+        head.grid(row=1, column=0, sticky="ew", padx=SP_LG, pady=(SP_LG, SP_MD))
         head.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(head, text="", image=tile_image(name, 34)).grid(row=0, column=0, rowspan=2, padx=(0, SP_MD))
+        ctk.CTkLabel(head, text="", image=tile_image(name, 38)).grid(row=0, column=0, rowspan=2, padx=(0, SP_MD))
         ctk.CTkLabel(head, text=PROVIDER_TITLES[name], font=(FONT, FS_H2, "bold"),
                      text_color=MOCHA["text"], anchor="w").grid(row=0, column=1, sticky="sw")
         self.status = ctk.CTkLabel(head, text="Connecting...", font=(FONT, FS_TINY),
                                    text_color=MOCHA["subtext0"], anchor="w")
-        self.status.grid(row=1, column=1, sticky="nw")
+        self.status.grid(row=1, column=1, sticky="nw", padx=(15, 0))
         self.dot = ctk.CTkFrame(head, width=9, height=9, fg_color=MOCHA["overlay0"], corner_radius=4)
-        self.dot.grid(row=0, column=2, rowspan=2, padx=(SP_SM, 6))
+        self.dot.place(x=52, rely=0.78, anchor="center")
         self.dot.grid_propagate(False)
         self.badge = ctk.CTkLabel(head, text="", font=(FONT, FS_TINY, "bold"),
                                   fg_color=MOCHA["surface0"], corner_radius=R_SM,
                                   text_color=MOCHA["subtext1"], padx=9, pady=3)
-        self.badge.grid(row=0, column=3, rowspan=2, sticky="e")
+        self.badge.grid(row=0, column=2, rowspan=2, sticky="e")
 
-        ctk.CTkFrame(self, height=1, fg_color=BORDER_SOFT).grid(row=1, column=0, sticky="ew", padx=SP_LG)
+        ctk.CTkFrame(self, height=1, fg_color=MOCHA["surface1"]).grid(row=2, column=0, sticky="ew", padx=SP_LG)
 
         self.body = ctk.CTkFrame(self, fg_color="transparent")
-        self.body.grid(row=2, column=0, sticky="nsew", padx=SP_MD, pady=(SP_SM, SP_LG))
+        self.body.grid(row=3, column=0, sticky="nsew", padx=SP_MD, pady=(SP_SM, SP_LG))
         self.body.grid_columnconfigure(0, weight=1)
 
     def update(self, snap: ProviderSnapshot, settings: dict, on_toggle, row_registry: dict):
@@ -201,11 +326,28 @@ class ProviderCard(ctk.CTkFrame):
 
         if not snap.ok:
             self.badge.configure(text="", fg_color="transparent")
-            self._empty(snap.error or "Unavailable.", color if snap.status != "no_credentials" else MOCHA["subtext0"])
+            if snap.status == "no_credentials":
+                hint = ("Open Claude Code and sign in, then refresh usage."
+                        if self.name == "claude"
+                        else "Run Codex and sign in, then refresh usage.")
+                self._empty("Not signed in", MOCHA["subtext1"], hint)
+            elif snap.status == "auth_expired":
+                hint = ("Re-open Claude Code to renew your login."
+                        if self.name == "claude"
+                        else "Run Codex again to renew your login.")
+                self._empty("Your login has expired", color, hint)
+            else:
+                message = snap.error or "Usage is temporarily unavailable."
+                if "429" in message or "rate limit" in message.casefold():
+                    hint = "The provider asked us to pause. AIUsageTracker will retry automatically."
+                else:
+                    hint = "Check your connection, then try Refresh usage."
+                self._empty(message, color, hint)
             return
 
-        plan = snap.meta.get("plan_type") or snap.meta.get("subscription") or "connected"
-        self.badge.configure(text=str(plan).upper(), text_color=self.accent, fg_color=MOCHA["surface0"])
+        plan = snap.meta.get("plan_type") or snap.meta.get("subscription") or ""
+        self.badge.configure(text=str(plan).upper(), text_color=self.accent,
+                             fg_color=MOCHA["surface0"] if plan else "transparent")
         if not snap.windows:
             self._empty("No active limit windows right now.", MOCHA["overlay0"])
             return
@@ -214,9 +356,16 @@ class ProviderCard(ctk.CTkFrame):
             row.grid(row=i, column=0, sticky="ew", pady=SP_XS)
             row_registry[w.key] = row
 
-    def _empty(self, text, color):
+    def _empty(self, text, color, hint=""):
         ctk.CTkLabel(self.body, text=text, font=(FONT, FS_SMALL), text_color=color,
-                     wraplength=340, justify="left", anchor="w").grid(sticky="ew", padx=6, pady=SP_MD)
+                     wraplength=340, justify="left", anchor="w").grid(
+                         row=0, column=0, sticky="ew", padx=6,
+                         pady=(SP_MD, SP_XS if hint else SP_MD))
+        if hint:
+            ctk.CTkLabel(self.body, text=hint, font=(FONT, FS_TINY),
+                         text_color=MOCHA["subtext0"], wraplength=340,
+                         justify="left", anchor="w").grid(
+                             row=1, column=0, sticky="ew", padx=6, pady=(0, SP_MD))
 
 
 # ---------------------------------------------------------------------------
@@ -224,11 +373,14 @@ class ProviderCard(ctk.CTkFrame):
 # ---------------------------------------------------------------------------
 class App(ctk.CTk):
     def __init__(self):
+        settings = config.load_settings()
+        settings["theme"] = ui_theme.apply_theme(settings.get("theme"))
+        ctk.set_appearance_mode(ui_theme.appearance_for(settings["theme"]))
         super().__init__()
-        self.settings = config.load_settings()
+        self.settings = settings
         self.title(f"AIUsageTracker v{__version__}")
-        self.geometry("1080x740")
-        self.minsize(940, 620)
+        self.geometry("1280x800")
+        self.minsize(1000, 680)
         self.configure(fg_color=MOCHA["base"])
         ico = icons.ensure_ico()
         if ico:
@@ -242,6 +394,14 @@ class App(ctk.CTk):
         self._alarm = Alarm()
         self._tray = None
         self._view = "dashboard"
+        self._settings_dialog = None
+        self._refresh_pending: set[str] = set()
+        self._refresh_timeout_id = None
+        self._theme_rebuild_id = None
+        self._drain_after_id = None
+        self._tick_after_id = None
+        self._chrome_after_id = None
+        self._closing = False
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -256,29 +416,38 @@ class App(ctk.CTk):
         self.poller.start()
 
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
-        self.after(150, self._drain_queue)
-        self.after(1000, self._tick)
+        self._chrome_after_id = self.after(80, self._apply_windows_chrome)
+        self._drain_after_id = self.after(150, self._drain_queue)
+        self._tick_after_id = self.after(1000, self._tick)
         self._start_tray()
+
+    def _apply_windows_chrome(self):
+        """Ask DWM for caption colors that match the active theme."""
+        set_windows_chrome(self, self.settings.get("theme", ui_theme.DEFAULT_THEME))
 
     # -- sidebar -------------------------------------------------------------
     def _build_sidebar(self):
-        bar = ctk.CTkFrame(self, width=210, corner_radius=0, fg_color=MOCHA["crust"])
+        bar = ctk.CTkFrame(self, width=188, corner_radius=0, fg_color=MOCHA["crust"],
+                           border_width=0)
+        self.sidebar = bar
         bar.grid(row=0, column=0, sticky="nsw")
         bar.grid_propagate(False)
+        bar.grid_columnconfigure(0, weight=1)
         bar.grid_rowconfigure(3, weight=1)
 
         brand = ctk.CTkFrame(bar, fg_color="transparent")
-        brand.grid(row=0, column=0, sticky="ew", padx=SP_LG, pady=(SP_XL, SP_XL))
-        ctk.CTkLabel(brand, text="", image=tile_image("app", 36)).grid(row=0, column=0, rowspan=2, padx=(0, SP_MD))
-        ctk.CTkLabel(brand, text="AI Usage", font=(FONT, FS_H2, "bold"),
+        brand.grid(row=0, column=0, sticky="ew", padx=SP_LG, pady=(SP_XL, 34))
+        ctk.CTkLabel(brand, text="", image=tile_image("app", 38)).grid(
+            row=0, column=0, rowspan=2, padx=(0, SP_MD))
+        ctk.CTkLabel(brand, text="AIUsageTracker", font=(FONT, FS_TITLE, "bold"),
                      text_color=MOCHA["text"]).grid(row=0, column=1, sticky="sw")
-        ctk.CTkLabel(brand, text="Tracker", font=(FONT, FS_SMALL),
+        ctk.CTkLabel(brand, text=f"v{__version__}", font=(FONT, FS_TINY),
                      text_color=MOCHA["subtext0"]).grid(row=1, column=1, sticky="nw")
 
         self.nav_buttons = {}
-        for i, (key, label, icon) in enumerate([("dashboard", "Dashboard", "▣"),
-                                                ("activity", "Activity", "≡")]):
-            btn = ctk.CTkButton(bar, text=f"   {icon}    {label}", anchor="w", height=42,
+        for i, (key, label, icon) in enumerate([("dashboard", "Dashboard", "▦"),
+                                                ("activity", "Activity", "☷")]):
+            btn = ctk.CTkButton(bar, text=f"  {icon}     {label}", anchor="w", height=46,
                                 corner_radius=R_SM, font=(FONT, FS_TITLE),
                                 fg_color="transparent", hover_color=MOCHA["surface0"],
                                 text_color=MOCHA["subtext1"],
@@ -286,56 +455,73 @@ class App(ctk.CTk):
             btn.grid(row=1 + i, column=0, sticky="ew", padx=SP_MD, pady=3)
             self.nav_buttons[key] = btn
 
-        footer = ctk.CTkFrame(bar, fg_color=MOCHA["mantle"], corner_radius=R_MD)
+        footer = ctk.CTkFrame(bar, fg_color=MOCHA["mantle"], corner_radius=R_MD,
+                              border_width=1, border_color=MOCHA["surface1"])
         footer.grid(row=4, column=0, sticky="ew", padx=SP_MD, pady=SP_MD)
+        footer.grid_columnconfigure(0, weight=1)
         inner = ctk.CTkFrame(footer, fg_color="transparent")
-        inner.grid(row=0, column=0, sticky="ew", padx=SP_MD, pady=SP_MD)
+        inner.grid(row=0, column=0, sticky="ew", padx=SP_MD, pady=(SP_MD, SP_XS))
         self.conn_dot = ctk.CTkFrame(inner, width=9, height=9, fg_color=MOCHA["green"], corner_radius=4)
         self.conn_dot.grid(row=0, column=0, padx=(0, SP_SM))
         self.conn_dot.grid_propagate(False)
         self.conn_text = ctk.CTkLabel(inner, text="Connecting...", font=(FONT, FS_SMALL),
                                       text_color=MOCHA["subtext1"], anchor="w")
         self.conn_text.grid(row=0, column=1, sticky="w")
-        ctk.CTkLabel(bar, text=f"v{__version__}", font=(FONT, FS_TINY),
-                     text_color=MOCHA["overlay0"]).grid(row=5, column=0, sticky="w", padx=SP_LG, pady=(0, SP_MD))
+        self.conn_detail = ctk.CTkLabel(footer, text="Waiting for first sync", font=(FONT, FS_TINY),
+                                        text_color=MOCHA["subtext0"], anchor="w")
+        self.conn_detail.grid(row=1, column=0, sticky="ew", padx=SP_MD, pady=(0, SP_MD))
         self._highlight_nav()
 
     def _highlight_nav(self):
         for key, btn in self.nav_buttons.items():
             if key == self._view:
-                btn.configure(fg_color=MOCHA["surface0"], text_color=MOCHA["mauve"])
+                btn.configure(fg_color=MOCHA["surface0"], text_color=MOCHA["text"],
+                              border_width=1, border_color=MOCHA["mauve"])
             else:
-                btn.configure(fg_color="transparent", text_color=MOCHA["subtext1"])
+                btn.configure(fg_color="transparent", text_color=MOCHA["subtext1"],
+                              border_width=0)
 
     # -- main area -----------------------------------------------------------
     def _build_main(self):
         main = ctk.CTkFrame(self, fg_color="transparent")
+        self.main = main
         main.grid(row=0, column=1, sticky="nsew")
         main.grid_columnconfigure(0, weight=1)
         main.grid_rowconfigure(2, weight=1)
 
         top = ctk.CTkFrame(main, fg_color="transparent")
-        top.grid(row=0, column=0, sticky="ew", padx=SP_XL, pady=(SP_XL, SP_XS))
+        top.grid(row=0, column=0, sticky="ew", padx=SP_XL, pady=(SP_XL, SP_SM))
         top.grid_columnconfigure(0, weight=1)
         titles = ctk.CTkFrame(top, fg_color="transparent")
         titles.grid(row=0, column=0, sticky="w")
-        self.view_title = ctk.CTkLabel(titles, text="Usage Dashboard", font=(FONT, FS_H1, "bold"),
+        hour = datetime.now().hour
+        greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
+        self.eyebrow = ctk.CTkLabel(titles, text=greeting, font=(FONT, FS_BODY, "bold"),
+                                    text_color=MOCHA["blue"], anchor="w")
+        self.eyebrow.grid(row=0, column=0, sticky="w")
+        self.view_title = ctk.CTkLabel(titles, text="Usage overview", font=(FONT, FS_H1, "bold"),
                                        text_color=MOCHA["text"], anchor="w")
-        self.view_title.grid(row=0, column=0, sticky="w")
+        self.view_title.grid(row=1, column=0, sticky="w", pady=(0, 2))
         self.view_sub = ctk.CTkLabel(titles, text="Monitor every limit. Never miss a reset.",
                                      font=(FONT, FS_BODY), text_color=MOCHA["subtext0"], anchor="w")
-        self.view_sub.grid(row=1, column=0, sticky="w")
+        self.view_sub.grid(row=2, column=0, sticky="w")
         self.synced_label = ctk.CTkLabel(top, text="", font=(FONT, FS_SMALL),
                                          text_color=MOCHA["subtext0"])
-        self.synced_label.grid(row=0, column=1, sticky="e", padx=(0, SP_MD))
-        ctk.CTkButton(top, text="Refresh now", width=110, height=36, corner_radius=R_SM,
-                      fg_color=MOCHA["mauve"], hover_color=MOCHA["lavender"],
-                      text_color=MOCHA["crust"], font=(FONT, FS_BODY, "bold"),
-                      command=self.refresh_now).grid(row=0, column=2, sticky="e")
-        ctk.CTkButton(top, text="⚙", width=40, height=36, corner_radius=R_SM,
-                      fg_color=MOCHA["surface0"], hover_color=MOCHA["surface1"],
-                      text_color=MOCHA["text"], font=(FONT, 16),
-                      command=self.open_settings).grid(row=0, column=3, sticky="e", padx=(SP_SM, 0))
+        self.synced_label.grid(row=0, column=1, sticky="e", padx=(SP_SM, SP_MD))
+        self.refresh_btn = ctk.CTkButton(
+            top, text="↻  Refresh usage", width=132, height=40, corner_radius=R_SM,
+            fg_color=MOCHA["mauve"], hover_color=MOCHA["lavender"],
+            text_color=MOCHA["crust"], font=(FONT, FS_BODY, "bold"),
+            command=self.refresh_now,
+        )
+        self.refresh_btn.grid(row=0, column=2, sticky="e")
+        settings_btn = ctk.CTkButton(
+            top, text="⚙", width=40, height=40, corner_radius=R_SM,
+            fg_color=MOCHA["surface0"], hover_color=MOCHA["surface1"],
+            text_color=MOCHA["text"], font=(FONT, 16), command=self.open_settings,
+        )
+        settings_btn.grid(row=0, column=3, sticky="e", padx=(SP_SM, 0))
+        self.settings_tip = ToolTip(settings_btn, "Open settings")
 
         # Alarm banner (hidden until a reset fires)
         self.banner = ctk.CTkFrame(main, fg_color=MOCHA["red"], corner_radius=R_MD)
@@ -348,7 +534,7 @@ class App(ctk.CTk):
                       text_color=MOCHA["text"], command=self.acknowledge_alarm).grid(row=0, column=1, padx=SP_MD, pady=SP_MD)
 
         self.body = ctk.CTkScrollableFrame(main, fg_color="transparent")
-        self.body.grid(row=2, column=0, sticky="nsew", padx=SP_LG, pady=(SP_SM, SP_MD))
+        self.body.grid(row=2, column=0, sticky="nsew", padx=SP_LG, pady=(0, SP_MD))
         self.body.grid_columnconfigure(0, weight=1)
 
         self._build_dashboard_view()
@@ -359,16 +545,17 @@ class App(ctk.CTk):
         self.dash = ctk.CTkFrame(self.body, fg_color="transparent")
         self.dash.grid_columnconfigure(0, weight=1)
 
-        stats = ctk.CTkFrame(self.dash, fg_color="transparent")
-        stats.grid(row=0, column=0, sticky="ew", padx=SP_SM, pady=(SP_XS, SP_MD))
-        for i in range(3):
-            stats.grid_columnconfigure(i, weight=1, uniform="stat")
-        self.stat_highest = StatCard(stats, "HIGHEST USAGE", "▲", MOCHA["peach"])
-        self.stat_highest.grid(row=0, column=0, sticky="ew", padx=(0, SP_SM))
-        self.stat_next = StatCard(stats, "NEXT RESET", "⏱", MOCHA["blue"])
-        self.stat_next.grid(row=0, column=1, sticky="ew", padx=SP_SM)
-        self.stat_conn = StatCard(stats, "CONNECTIONS", "⚡", MOCHA["green"])
-        self.stat_conn.grid(row=0, column=2, sticky="ew", padx=(SP_SM, 0))
+        insights = ctk.CTkFrame(self.dash, fg_color=MOCHA["mantle"], corner_radius=R_LG,
+                                border_width=1, border_color=MOCHA["surface1"])
+        insights.grid(row=0, column=0, sticky="ew", padx=SP_SM, pady=(SP_XS, SP_MD))
+        insights.grid_columnconfigure(0, weight=1, uniform="insight")
+        insights.grid_columnconfigure(2, weight=1, uniform="insight")
+        self.stat_next = InsightMetric(insights, "Next reset in", "⏱", MOCHA["blue"])
+        self.stat_next.grid(row=0, column=0, sticky="ew", padx=SP_LG)
+        ctk.CTkFrame(insights, width=1, height=56, fg_color=MOCHA["surface1"]).grid(
+            row=0, column=1, pady=SP_MD)
+        self.stat_highest = InsightMetric(insights, "Highest pressure", "↗", MOCHA["red"])
+        self.stat_highest.grid(row=0, column=2, sticky="ew", padx=SP_LG)
 
         providers = ctk.CTkFrame(self.dash, fg_color="transparent")
         providers.grid(row=1, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_MD))
@@ -378,17 +565,34 @@ class App(ctk.CTk):
             "claude": ProviderCard(providers, "claude"),
             "codex": ProviderCard(providers, "codex"),
         }
-        self.provider_cards["claude"].grid(row=0, column=0, sticky="new", padx=(0, SP_SM))
-        self.provider_cards["codex"].grid(row=0, column=1, sticky="new", padx=(SP_SM, 0))
+        providers.grid_rowconfigure(0, weight=1)
+        self.provider_cards["claude"].grid(row=0, column=0, sticky="nsew", padx=(0, SP_SM))
+        self.provider_cards["codex"].grid(row=0, column=1, sticky="nsew", padx=(SP_SM, 0))
 
-        act = ctk.CTkFrame(self.dash, fg_color=MOCHA["mantle"], corner_radius=R_LG,
-                           border_width=1, border_color=BORDER_SOFT)
-        act.grid(row=2, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))
+        lower = ctk.CTkFrame(self.dash, fg_color="transparent")
+        lower.grid(row=2, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))
+        lower.grid_columnconfigure(0, weight=5, uniform="lower")
+        lower.grid_columnconfigure(1, weight=4, uniform="lower")
+
+        metrics = ctk.CTkFrame(lower, fg_color="transparent")
+        metrics.grid(row=0, column=0, sticky="nsew", padx=(0, SP_SM))
+        for i in range(3):
+            metrics.grid_columnconfigure(i, weight=1, uniform="metric")
+        self.stat_active = StatCard(metrics, "Active windows", "↻", MOCHA["blue"])
+        self.stat_active.grid(row=0, column=0, sticky="nsew", padx=(0, SP_XS))
+        self.stat_healthy = StatCard(metrics, "Healthy windows", "✓", MOCHA["green"])
+        self.stat_healthy.grid(row=0, column=1, sticky="nsew", padx=SP_XS)
+        self.stat_pressure = StatCard(metrics, "High pressure", "!", MOCHA["yellow"])
+        self.stat_pressure.grid(row=0, column=2, sticky="nsew", padx=(SP_XS, 0))
+
+        act = ctk.CTkFrame(lower, fg_color=MOCHA["mantle"], corner_radius=R_LG,
+                           border_width=1, border_color=MOCHA["surface1"])
+        act.grid(row=0, column=1, sticky="nsew", padx=(SP_SM, 0))
         act.grid_columnconfigure(0, weight=1)
         head = ctk.CTkFrame(act, fg_color="transparent")
         head.grid(row=0, column=0, sticky="ew", padx=SP_LG, pady=(SP_MD, SP_XS))
         head.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(head, text="Recent activity", font=(FONT, FS_H2, "bold"),
+        ctk.CTkLabel(head, text="↻  Recent reset activity", font=(FONT, FS_TITLE, "bold"),
                      text_color=MOCHA["text"], anchor="w").grid(row=0, column=0, sticky="w")
         ctk.CTkButton(head, text="View all", width=76, height=28, corner_radius=R_SM,
                       fg_color="transparent", hover_color=MOCHA["surface0"],
@@ -402,7 +606,7 @@ class App(ctk.CTk):
         self.activity = ctk.CTkFrame(self.body, fg_color="transparent")
         self.activity.grid_columnconfigure(0, weight=1)
         self.activity_list = ctk.CTkFrame(self.activity, fg_color=MOCHA["mantle"], corner_radius=R_LG,
-                                          border_width=1, border_color=BORDER_SOFT)
+                                          border_width=1, border_color=MOCHA["surface1"])
         self.activity_list.grid(row=0, column=0, sticky="ew", padx=SP_SM, pady=SP_XS)
         self.activity_list.grid_columnconfigure(0, weight=1)
 
@@ -411,10 +615,12 @@ class App(ctk.CTk):
         self.dash.grid_forget()
         self.activity.grid_forget()
         if key == "dashboard":
-            self.view_title.configure(text="Usage Dashboard")
+            self.eyebrow.grid()
+            self.view_title.configure(text="Usage overview")
             self.view_sub.configure(text="Monitor every limit. Never miss a reset.")
             self.dash.grid(row=0, column=0, sticky="nsew")
         else:
+            self.eyebrow.grid_remove()
             self.view_title.configure(text="Activity")
             self.view_sub.configure(text="Every usage reset AIUsageTracker has detected.")
             self.activity.grid(row=0, column=0, sticky="nsew")
@@ -452,6 +658,8 @@ class App(ctk.CTk):
 
     # -- queue / event handling ---------------------------------------------
     def _drain_queue(self):
+        if self._closing:
+            return
         try:
             while True:
                 kind, payload = self._queue.get_nowait()
@@ -463,7 +671,7 @@ class App(ctk.CTk):
                     self._on_warn(payload)
         except queue.Empty:
             pass
-        self.after(200, self._drain_queue)
+        self._drain_after_id = self.after(200, self._drain_queue)
 
     def _on_snapshot(self, snap: ProviderSnapshot):
         for key in [k for k in self._rows if k.startswith(f"{snap.provider}:")]:
@@ -472,6 +680,10 @@ class App(ctk.CTk):
         if card:
             card.update(snap, self.settings, self._set_window_alarm, self._rows)
         self._recompute_summary()
+        if snap.provider in self._refresh_pending:
+            self._refresh_pending.discard(snap.provider)
+            if not self._refresh_pending:
+                self._finish_refresh()
 
     def _recompute_summary(self):
         snaps = self.poller.snapshots()
@@ -485,30 +697,40 @@ class App(ctk.CTk):
             self.stat_highest.set(f"{hi.utilization:.0f}%",
                                   f"{hi.label} · {PROVIDER_TITLES.get(hi.provider, hi.provider)}",
                                   SEVERITY_COLOR.get(hi.severity, MOCHA["text"]))
+            self._update_tray_icon(hi.utilization)
+            healthy = sum(w.utilization <= 50 for w in windows)
+            pressure = sum(w.utilization >= 70 for w in windows)
+            self.stat_active.set(str(len(windows)), "Across both providers", MOCHA["text"])
+            self.stat_healthy.set(str(healthy), "At or below 50%", MOCHA["green"])
+            self.stat_pressure.set(str(pressure), "Above 70% usage",
+                                   MOCHA["yellow"] if pressure else MOCHA["green"])
         else:
             self.stat_highest.set("--", "waiting for data")
+            self.stat_active.set("--", "Waiting for data")
+            self.stat_healthy.set("--", "Waiting for data")
+            self.stat_pressure.set("--", "Waiting for data")
 
         self._update_next_reset(windows)
 
         enabled = [p for p, on in self.settings.get("providers", {}).items() if on]
         oks = [p for p in enabled if snaps.get(p) and snaps[p].ok]
         if enabled and len(oks) == len(enabled):
-            self.stat_conn.set("All good", f"{len(oks)}/{len(enabled)} providers connected", MOCHA["green"])
             self.conn_dot.configure(fg_color=MOCHA["green"])
-            self.conn_text.configure(text="All systems connected", text_color=MOCHA["subtext1"])
+            self.conn_text.configure(text="Connected", text_color=MOCHA["green"])
+            self.conn_detail.configure(text="All systems operational")
         else:
             bad = [PROVIDER_TITLES.get(p, p) for p in enabled if p not in oks]
             col = MOCHA["yellow"] if oks else MOCHA["red"]
-            self.stat_conn.set(f"{len(oks)}/{len(enabled)}",
-                               ("check " + ", ".join(bad)) if bad else "connecting", col)
             self.conn_dot.configure(fg_color=col)
-            self.conn_text.configure(text=(", ".join(bad) + " offline") if bad else "connecting...",
+            self.conn_text.configure(text="Needs attention" if bad else "Connecting...",
                                      text_color=col)
+            self.conn_detail.configure(text=(", ".join(bad) + " offline") if bad else "Waiting for first sync")
 
         times = [s.fetched_at for s in snaps.values() if s.ok]
         if times:
-            self.synced_label.configure(
-                text=f"Synced {max(times).astimezone():%I:%M:%S %p}  ·  every {self.settings['poll_seconds']}s")
+            latest = max(times).astimezone()
+            self.synced_label.configure(text=f"Last synced {latest:%I:%M:%S %p}  ·  every {self.settings['poll_seconds']}s")
+            self.conn_detail.configure(text=f"Synced {latest:%I:%M:%S %p}")
         self._render_recent()
 
     def _update_next_reset(self, windows=None):
@@ -554,17 +776,44 @@ class App(ctk.CTk):
 
     # -- periodic tick -------------------------------------------------------
     def _tick(self):
+        if self._closing:
+            return
         for row in self._rows.values():
             try:
                 row.refresh_countdown()
             except Exception:
                 pass
         self._update_next_reset()
-        self.after(1000, self._tick)
+        self._tick_after_id = self.after(1000, self._tick)
 
     # -- actions -------------------------------------------------------------
     def refresh_now(self):
+        self._refresh_pending = {
+            provider for provider, enabled in self.settings.get("providers", {}).items()
+            if enabled
+        }
+        if hasattr(self, "refresh_btn") and self.refresh_btn.winfo_exists():
+            self.refresh_btn.configure(text="Refreshing…", state="disabled")
         self.poller.poll_now()
+        if self._refresh_timeout_id is not None:
+            try:
+                self.after_cancel(self._refresh_timeout_id)
+            except Exception:
+                pass
+        self._refresh_timeout_id = self.after(15000, self._finish_refresh)
+        if not self._refresh_pending:
+            self._finish_refresh()
+
+    def _finish_refresh(self):
+        self._refresh_pending.clear()
+        if self._refresh_timeout_id is not None:
+            try:
+                self.after_cancel(self._refresh_timeout_id)
+            except Exception:
+                pass
+            self._refresh_timeout_id = None
+        if hasattr(self, "refresh_btn") and self.refresh_btn.winfo_exists():
+            self.refresh_btn.configure(text="↻  Refresh usage", state="normal")
 
     def acknowledge_alarm(self):
         self._alarm.stop()
@@ -575,13 +824,60 @@ class App(ctk.CTk):
         config.save_settings(self.settings)
 
     def open_settings(self):
-        SettingsDialog(self)
+        try:
+            dialog_open = self._settings_dialog is not None and self._settings_dialog.winfo_exists()
+        except Exception:
+            dialog_open = False
+            self._settings_dialog = None
+        if dialog_open:
+            self._settings_dialog.deiconify()
+            self._settings_dialog.lift()
+            self._settings_dialog.focus_force()
+            return
+        self._settings_dialog = SettingsDialog(self)
 
     def apply_settings(self, new: dict):
+        previous_theme = ui_theme.normalize_theme(self.settings.get("theme"))
+        new["theme"] = ui_theme.normalize_theme(new.get("theme", previous_theme))
         self.settings.update(new)
         config.save_settings(self.settings)
         self.poller.settings = self.settings
         self.poller.poll_now()
+        if new["theme"] != previous_theme:
+            if self._theme_rebuild_id is not None:
+                try:
+                    self.after_cancel(self._theme_rebuild_id)
+                except Exception:
+                    pass
+            self._theme_rebuild_id = self.after(200, self._rebuild_for_theme)
+
+    def _rebuild_for_theme(self):
+        """Recreate the widget tree so a newly selected theme applies live."""
+        self._theme_rebuild_id = None
+        active_view = self._view
+        if hasattr(self, "settings_tip"):
+            self.settings_tip._hide()
+        for row in self._rows.values():
+            if hasattr(row, "alarm_tip"):
+                row.alarm_tip._hide()
+        for child in (getattr(self, "sidebar", None), getattr(self, "main", None)):
+            if child is not None:
+                try:
+                    child.destroy()
+                except Exception:
+                    pass
+        self.settings["theme"] = ui_theme.apply_theme(self.settings.get("theme"))
+        ctk.set_appearance_mode(ui_theme.appearance_for(self.settings["theme"]))
+        _IMG_CACHE.clear()
+        self.configure(fg_color=MOCHA["base"])
+        self._rows.clear()
+        self._build_sidebar()
+        self._build_main()
+        self.show_view(active_view)
+        for snap in self.poller.snapshots().values():
+            self._on_snapshot(snap)
+        self._recompute_summary()
+        self._chrome_after_id = self.after(30, self._apply_windows_chrome)
 
     # -- tray ----------------------------------------------------------------
     def _start_tray(self):
@@ -600,6 +896,14 @@ class App(ctk.CTk):
         self._tray = pystray.Icon("AIUsageTracker", image, "AI Usage Tracker", menu)
         threading.Thread(target=self._tray.run, daemon=True).start()
 
+    def _update_tray_icon(self, utilization_pct: float):
+        if self._tray is not None:
+            try:
+                self._tray.icon = icons.tray_status_icon(64, utilization_pct)
+                self._tray.title = f"AI Usage: {utilization_pct:.0f}%"
+            except Exception:
+                pass
+
     def _show_window(self):
         self.deiconify(); self.lift(); self.focus_force()
 
@@ -610,7 +914,21 @@ class App(ctk.CTk):
             self.quit_app()
 
     def quit_app(self):
+        self._closing = True
         try:
+            for after_id in (self._theme_rebuild_id, self._refresh_timeout_id,
+                             self._drain_after_id, self._tick_after_id,
+                             self._chrome_after_id):
+                if after_id is not None:
+                    try:
+                        self.after_cancel(after_id)
+                    except Exception:
+                        pass
+            if hasattr(self, "settings_tip"):
+                self.settings_tip._hide()
+            for row in self._rows.values():
+                if hasattr(row, "alarm_tip"):
+                    row.alarm_tip._hide()
             self._alarm.stop()
             self.poller.stop()
             if self._tray is not None:
@@ -632,20 +950,29 @@ class SettingsDialog(ctk.CTkToplevel):
         super().__init__(app)
         self.app = app
         self.title("Settings")
-        self.geometry("440x600")
+        self.geometry("470x700")
+        self.minsize(440, 620)
         self.configure(fg_color=MOCHA["base"])
         self.transient(app)
+        self.protocol("WM_DELETE_WINDOW", self._close)
+        self.bind("<Escape>", lambda _event: self._close())
+        self.bind("<Control-s>", lambda _event: self._save())
         try:
             self.after(60, self.grab_set)
         except Exception:
             pass
+        self._chrome_after_id = self.after(
+            100, lambda: set_windows_chrome(self, app.settings.get("theme", ui_theme.DEFAULT_THEME)))
         s = app.settings
 
         wrap = ctk.CTkScrollableFrame(self, fg_color="transparent")
         wrap.pack(fill="both", expand=True, padx=SP_SM, pady=SP_SM)
 
         ctk.CTkLabel(wrap, text="Settings", font=(FONT, FS_H1, "bold"),
-                     text_color=MOCHA["text"]).pack(anchor="w", padx=SP_MD, pady=(SP_SM, SP_MD))
+                     text_color=MOCHA["text"]).pack(anchor="w", padx=SP_MD, pady=(SP_SM, 0))
+        ctk.CTkLabel(wrap, text="Make AIUsageTracker work the way you do.",
+                     font=(FONT, FS_BODY), text_color=MOCHA["subtext0"]).pack(
+                         anchor="w", padx=SP_MD, pady=(0, SP_MD))
 
         self.var_claude = ctk.BooleanVar(value=s["providers"].get("claude", True))
         self.var_codex = ctk.BooleanVar(value=s["providers"].get("codex", True))
@@ -653,6 +980,33 @@ class SettingsDialog(ctk.CTkToplevel):
         self.var_loop = ctk.BooleanVar(value=s.get("alarm_loop", True))
         self.var_toast = ctk.BooleanVar(value=s.get("toast", True))
         self.var_min = ctk.BooleanVar(value=s.get("start_minimized", False))
+
+        # Appearance ------------------------------------------------------
+        card = self._section(wrap, "Appearance")
+        row = ctk.CTkFrame(card, fg_color="transparent")
+        row.pack(fill="x", padx=SP_MD, pady=(SP_MD, SP_SM))
+        ctk.CTkLabel(row, text="Theme", font=(FONT, FS_BODY, "bold"),
+                     text_color=MOCHA["text"]).pack(side="left")
+        self.theme_menu = ctk.CTkOptionMenu(
+            row, values=list(ui_theme.THEME_CHOICES), width=150, corner_radius=R_SM,
+            fg_color=MOCHA["surface0"], button_color=MOCHA["surface1"],
+            button_hover_color=MOCHA["surface2"], text_color=MOCHA["text"],
+            command=self._update_theme_preview,
+        )
+        self.theme_menu.set(ui_theme.theme_label(s.get("theme")))
+        self.theme_menu.pack(side="right")
+        preview_row = ctk.CTkFrame(card, fg_color="transparent")
+        preview_row.pack(fill="x", padx=SP_MD)
+        self.theme_swatches = []
+        for _ in range(5):
+            swatch = ctk.CTkFrame(preview_row, width=28, height=28, corner_radius=R_SM)
+            swatch.pack(side="left", padx=(0, SP_XS))
+            swatch.pack_propagate(False)
+            self.theme_swatches.append(swatch)
+        self.theme_desc = ctk.CTkLabel(card, text="", font=(FONT, FS_TINY),
+                                       text_color=MOCHA["subtext0"], anchor="w")
+        self.theme_desc.pack(fill="x", padx=SP_MD, pady=(SP_SM, SP_MD))
+        self._update_theme_preview(self.theme_menu.get())
 
         # Providers -------------------------------------------------------
         card = self._section(wrap, "Providers")
@@ -692,12 +1046,15 @@ class SettingsDialog(ctk.CTkToplevel):
                      text_color=MOCHA["subtext0"]).pack(side="left")
         ctk.CTkLabel(card, text="Claude rate-limits faster polling; 180s is the safe floor.",
                      font=(FONT, FS_TINY), text_color=MOCHA["subtext0"], anchor="w").pack(anchor="w", padx=SP_MD, pady=(0, SP_XS))
+        self.poll_error = ctk.CTkLabel(card, text="", font=(FONT, FS_TINY, "bold"),
+                                       text_color=MOCHA["red"], anchor="w")
+        self.poll_error.pack(anchor="w", padx=SP_MD, pady=(0, SP_SM))
 
         btns = ctk.CTkFrame(self, fg_color="transparent")
         btns.pack(fill="x", padx=SP_LG, pady=SP_MD)
         ctk.CTkButton(btns, text="Cancel", width=90, height=34, corner_radius=R_SM,
                       fg_color=MOCHA["surface0"], hover_color=MOCHA["surface1"], text_color=MOCHA["text"],
-                      command=self.destroy).pack(side="right", padx=(SP_SM, 0))
+                      command=self._close).pack(side="right", padx=(SP_SM, 0))
         ctk.CTkButton(btns, text="Save changes", width=130, height=34, corner_radius=R_SM,
                       fg_color=MOCHA["green"], text_color=MOCHA["crust"], hover_color=MOCHA["teal"],
                       font=(FONT, FS_BODY, "bold"), command=self._save).pack(side="right")
@@ -706,7 +1063,7 @@ class SettingsDialog(ctk.CTkToplevel):
         ctk.CTkLabel(parent, text=title.upper(), font=(FONT, FS_TINY, "bold"),
                      text_color=MOCHA["subtext0"]).pack(anchor="w", padx=SP_MD, pady=(SP_MD, SP_XS))
         card = ctk.CTkFrame(parent, fg_color=MOCHA["mantle"], corner_radius=R_MD,
-                            border_width=1, border_color=BORDER_SOFT)
+                            border_width=1, border_color=MOCHA["surface1"])
         card.pack(fill="x", padx=SP_SM, pady=(0, SP_XS))
         return card
 
@@ -717,12 +1074,45 @@ class SettingsDialog(ctk.CTkToplevel):
         ctk.CTkLabel(parent, text=hint, font=(FONT, FS_TINY), text_color=MOCHA["subtext0"],
                      anchor="w", justify="left", wraplength=360).pack(anchor="w", padx=(SP_XL + 4, SP_MD), pady=(0, SP_XS))
 
+    def _update_theme_preview(self, label):
+        key = ui_theme.theme_key_from_label(label)
+        palette = ui_theme.palette_for(key)
+        colors = [palette["crust"], palette["surface0"], palette["mauve"],
+                  palette["blue"], palette["green"]]
+        for swatch, color in zip(self.theme_swatches, colors):
+            swatch.configure(fg_color=color, border_width=1,
+                             border_color=palette["surface2"])
+        self.theme_desc.configure(text=ui_theme.description_for(key))
+
+    def _close(self):
+        if self.app._settings_dialog is self:
+            self.app._settings_dialog = None
+        if self._chrome_after_id is not None:
+            try:
+                self.after_cancel(self._chrome_after_id)
+            except Exception:
+                pass
+            self._chrome_after_id = None
+        try:
+            self.grab_release()
+        except Exception:
+            pass
+        self.destroy()
+
     def _save(self):
         try:
-            poll = max(config.MIN_POLL_SECONDS, int(self.poll_entry.get()))
+            poll = int(self.poll_entry.get().strip())
         except ValueError:
-            poll = config.DEFAULT_POLL_SECONDS
-        self.app.apply_settings({
+            self.poll_error.configure(text="Enter a whole number of seconds.")
+            self.poll_entry.focus_set()
+            return
+        if poll < config.MIN_POLL_SECONDS:
+            self.poll_error.configure(text=f"Use {config.MIN_POLL_SECONDS} seconds or more to avoid rate limits.")
+            self.poll_entry.focus_set()
+            return
+        self.poll_error.configure(text="")
+        new_settings = {
+            "theme": ui_theme.theme_key_from_label(self.theme_menu.get()),
             "providers": {"claude": self.var_claude.get(), "codex": self.var_codex.get()},
             "alarm_sound": self.var_alarm.get(),
             "alarm_sound_name": self.sound_menu.get(),
@@ -730,8 +1120,10 @@ class SettingsDialog(ctk.CTkToplevel):
             "toast": self.var_toast.get(),
             "start_minimized": self.var_min.get(),
             "poll_seconds": poll,
-        })
-        self.destroy()
+        }
+        app = self.app
+        self._close()
+        app.apply_settings(new_settings)
 
 
 def main():

@@ -22,13 +22,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
 
 ## Research-Driven Additions (2026-07-18)
 
-- [ ] P1 — **Dynamic tray icon (severity color + % text)**
-  Why: Users must open the full window to see usage status. Competitors (TrafficMonitor, Pomodoro timers, iStat Menus) render live data INTO the tray icon for instant glanceability.
-  Evidence: jens-duttke/usage-monitor-for-claude uses color-coded tray; community signal #1 is "I want to know without clicking."
-  Touches: `gui/app.py` (tray icon update loop), `gui/icons.py` (new `tray_status_icon()` renderer)
-  Acceptance: Tray icon updates every poll cycle showing highest-usage % as text or green→yellow→orange→red color gradient.
-  Complexity: M
-
 - [ ] P1 — **Burn-rate / ETA-to-exhaustion forecast**
   Why: Community's biggest unmet need after threshold alerts — "at current pace, when will I hit the wall?" Multiple competitors (Claude-Code-Usage-Monitor, bozdemir widget, CodexBar) offer this.
   Evidence: GitHub issues #41930, #55779; Claude-Code-Usage-Monitor P90 calculator; 232-upvote Reddit thread on surprise mid-task halts.
