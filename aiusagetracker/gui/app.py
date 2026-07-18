@@ -472,6 +472,8 @@ class App(ctk.CTk):
         self.poller.start()
 
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
+        self.bind("<Escape>", lambda e: self.acknowledge_alarm())
+        self.bind("<F5>", lambda e: self.refresh_now())
         self._chrome_after_id = self.after(80, self._apply_windows_chrome)
         self._drain_after_id = self.after(150, self._drain_queue)
         self._tick_after_id = self.after(1000, self._tick)
