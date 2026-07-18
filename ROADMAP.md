@@ -50,12 +50,6 @@ Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 =
   Acceptance: User configures a Discord/Telegram webhook URL in Settings; reset events trigger a POST with provider + window + utilization info.
   Complexity: M
 
-- [ ] P3 — **Animated bar transitions**
-  Why: Abrupt bar jumps on poll updates feel jarring. Smooth 200-400ms easing makes updates feel responsive and polished.
-  Evidence: iStat Menus, Vercel dashboards, real-time dashboard UX best practices (Smashing Magazine).
-  Touches: `gui/app.py` (animate CTkProgressBar value changes via `after()` frame interpolation)
-  Acceptance: Usage bars animate smoothly between old and new values over ~300ms on each poll update.
-  Complexity: S
 
 ## Done
 

@@ -287,9 +287,11 @@ class LimitRow(ctk.CTkFrame):
 
         self.bar = ctk.CTkProgressBar(self, height=8, corner_radius=R_XS,
                                       progress_color=sev, fg_color=MOCHA["surface2"])
-        self.bar.set(min(1.0, window.utilization / 100))
+        self._bar_target = min(1.0, window.utilization / 100)
+        self.bar.set(0)
         self.bar.grid(row=2, column=1, columnspan=2, sticky="ew",
                       padx=(SP_MD, SP_SM), pady=(0, 4))
+        self._animate_bar(0, self._bar_target, 0)
 
         self.sparkline = _Sparkline(self, window.key, sev)
         self.sparkline.grid(row=3, column=1, columnspan=2, sticky="ew",
@@ -311,6 +313,16 @@ class LimitRow(ctk.CTkFrame):
         self._style_toggle()
         if self.on_toggle:
             self.on_toggle(self.key, self.alarm_on)
+
+    def _animate_bar(self, current: float, target: float, step: int):
+        total_steps = 12
+        if step >= total_steps:
+            self.bar.set(target)
+            return
+        progress = (step + 1) / total_steps
+        value = current + (target - current) * progress
+        self.bar.set(value)
+        self.after(25, self._animate_bar, current, target, step + 1)
 
     def refresh_countdown(self):
         secs = self.resets_at and (self.resets_at - now_utc()).total_seconds()
