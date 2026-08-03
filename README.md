@@ -9,9 +9,9 @@ A Windows desktop widget that tracks your **Claude** (claude.ai / Claude Code) a
 **OpenAI Codex** usage windows in real time — and fires an **alarm the instant a
 usage window resets**, so you never have to sit refreshing the usage pages again.
 
-A dark, dashboard-style desktop app: a sidebar (Dashboard / Activity), summary cards
-(highest usage, next reset, connections), side-by-side Claude and Codex cards with
-per-window usage bars and alarm toggles, and a recent-activity feed.
+A dense desktop command center: a compact sidebar (Dashboard / Activity), prominent
+next-reset and highest-pressure insights, side-by-side Claude and Codex cards with
+per-window usage bars and alarm toggles, and an above-the-fold health/activity band.
 
 ## Why
 
@@ -89,6 +89,10 @@ python -m aiusagetracker.cli monitor   # run the reset watcher in the terminal
   window. Only the windows you care about will wake you.
 - **Brand-aware dashboard** — Claude and Codex provider cards, summary metrics
   (highest usage, next reset, connections), and a recent-activity feed.
+- **Usage intelligence** — a compact 24-hour token summary plus a four-week Activity
+  heatmap built from locally persisted history.
+- **Multi-account layout** — additional configured accounts wrap into balanced rows
+  instead of compressing the primary Claude and Codex cards.
 - **Distinct app identity** — a purpose-built quota-cycle mark shared by the
   window, taskbar, system tray, and packaged executable.
 - **Live countdowns** to each reset, plus the exact local reset time.
@@ -97,6 +101,8 @@ python -m aiusagetracker.cli monitor   # run the reset watcher in the terminal
   `%APPDATA%\AIUsageTracker\reset_events.jsonl`.
 - **Three appearance themes** — Midnight, Graphite, and Daylight, applied live
   after saving Settings.
+- **Keyboard workflow** — `F5` refreshes, `Ctrl+1` / `Ctrl+2` switch views, and
+  `Ctrl+,` opens Settings.
 
 ## Settings
 

@@ -126,6 +126,81 @@ def bell_icon(size: int = 32, color: str = "#66d9e8", enabled: bool = True) -> I
     return img.resize((size, size), Image.LANCZOS)
 
 
+def line_icon(name: str, size: int = 32, color: str = "#eef3fb") -> Image.Image:
+    """Render a small consistent line icon for dashboard controls.
+
+    Segoe UI's symbol coverage varies across Windows releases. Drawing the
+    handful of interface glyphs ourselves keeps every button crisp and aligned
+    at 100-150% display scaling.
+    """
+    img, d, s = _canvas(size)
+    rgba = _hex(color)
+    stroke = max(4, int(s * 0.065))
+
+    if name == "dashboard":
+        gap = s * 0.09
+        cell = s * 0.25
+        start = s * 0.20
+        for row in range(2):
+            for col in range(2):
+                x = start + col * (cell + gap)
+                y = start + row * (cell + gap)
+                d.rounded_rectangle([x, y, x + cell, y + cell], radius=s * 0.035,
+                                    outline=rgba, width=stroke)
+    elif name == "activity":
+        for y in (s * 0.25, s * 0.50, s * 0.75):
+            d.ellipse([s * 0.18, y - stroke / 2, s * 0.18 + stroke, y + stroke / 2],
+                      fill=rgba)
+            d.line([(s * 0.34, y), (s * 0.82, y)], fill=rgba, width=stroke)
+    elif name == "refresh":
+        box = [s * 0.22, s * 0.22, s * 0.78, s * 0.78]
+        d.arc(box, start=35, end=300, fill=rgba, width=stroke)
+        d.polygon([(s * 0.73, s * 0.16), (s * 0.83, s * 0.34), (s * 0.62, s * 0.31)],
+                  fill=rgba)
+    elif name == "settings":
+        cx = cy = s / 2
+        for i in range(8):
+            angle = math.radians(i * 45)
+            inner = s * 0.27
+            outer = s * 0.39
+            d.line([(cx + inner * math.cos(angle), cy + inner * math.sin(angle)),
+                    (cx + outer * math.cos(angle), cy + outer * math.sin(angle))],
+                   fill=rgba, width=stroke)
+        d.ellipse([s * 0.25, s * 0.25, s * 0.75, s * 0.75], outline=rgba, width=stroke)
+        d.ellipse([s * 0.42, s * 0.42, s * 0.58, s * 0.58], outline=rgba, width=stroke)
+    elif name in {"clock", "history"}:
+        d.ellipse([s * 0.18, s * 0.18, s * 0.82, s * 0.82], outline=rgba, width=stroke)
+        d.line([(s * 0.50, s * 0.50), (s * 0.50, s * 0.31)], fill=rgba, width=stroke)
+        d.line([(s * 0.50, s * 0.50), (s * 0.65, s * 0.58)], fill=rgba, width=stroke)
+        if name == "history":
+            d.polygon([(s * 0.12, s * 0.22), (s * 0.30, s * 0.19), (s * 0.21, s * 0.36)],
+                      fill=rgba)
+    elif name == "trend":
+        pts = [(s * 0.18, s * 0.72), (s * 0.42, s * 0.48),
+               (s * 0.56, s * 0.60), (s * 0.80, s * 0.28)]
+        d.line(pts, fill=rgba, width=stroke, joint="curve")
+        d.line([(s * 0.62, s * 0.28), (s * 0.80, s * 0.28), (s * 0.80, s * 0.46)],
+               fill=rgba, width=stroke)
+    elif name == "healthy":
+        shield = [(s * 0.50, s * 0.14), (s * 0.78, s * 0.25),
+                  (s * 0.73, s * 0.64), (s * 0.50, s * 0.84),
+                  (s * 0.27, s * 0.64), (s * 0.22, s * 0.25),
+                  (s * 0.50, s * 0.14)]
+        d.line(shield, fill=rgba, width=stroke, joint="curve")
+        d.line([(s * 0.35, s * 0.49), (s * 0.46, s * 0.60), (s * 0.66, s * 0.38)],
+               fill=rgba, width=stroke)
+    elif name == "pressure":
+        d.line([(s * 0.50, s * 0.14), (s * 0.84, s * 0.79),
+                (s * 0.16, s * 0.79), (s * 0.50, s * 0.14)],
+               fill=rgba, width=stroke, joint="curve")
+        d.line([(s * 0.50, s * 0.35), (s * 0.50, s * 0.57)], fill=rgba, width=stroke)
+        d.ellipse([s * 0.47, s * 0.66, s * 0.53, s * 0.72], fill=rgba)
+    else:
+        d.ellipse([s * 0.22, s * 0.22, s * 0.78, s * 0.78], outline=rgba, width=stroke)
+
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def _hex(h: str):
     h = h.lstrip("#")
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)

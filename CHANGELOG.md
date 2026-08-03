@@ -26,6 +26,12 @@ Data intelligence and multi-account support.
 - Reimagined the desktop dashboard as a responsive usage command center with a
   compact navigation rail, insight strip, brand-edged provider panels, clearer
   percentage-used quota rows, square bell controls, and a summary/activity band.
+- Tightened quota rows so all primary limits and the lower health/activity band fit
+  at the default window size; historical trends remain available in Activity.
+- Replaced platform-dependent text glyphs with a consistent supersampled line-icon
+  set for navigation, insight, refresh, settings, and health controls.
+- Reworked reset activity into scan-friendly two-line entries and let additional
+  account cards wrap into balanced two-column rows.
 - Replaced the previous Catppuccin surface treatment with a higher-contrast
   navy, coral, cyan, and mint palette and matching dark Windows title bar.
 - Replaced the old gauge icon across the window, sidebar, taskbar, tray, and
@@ -37,8 +43,12 @@ Data intelligence and multi-account support.
 ### Fixed
 - The dashboard no longer overflows horizontally at its default window size.
 - Provider panels now share a consistent height when their window counts differ.
+- The four-week Activity heatmap now uses true week columns and weekday rows, with
+  readable week labels and a utilization legend.
 - Repeated live theme changes no longer race delayed Tk callbacks or destroy a
   newly opened Settings window.
+- The Windows package no longer excludes Pillow's `ImageTk` bridge, so image-backed
+  CustomTkinter controls launch correctly in the portable EXE and installer build.
 
 ## [0.3.0] - 2026-07-18
 

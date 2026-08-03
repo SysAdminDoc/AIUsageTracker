@@ -24,7 +24,7 @@ $excludes = @(
     "ftplib", "imaplib", "smtplib", "nntplib", "poplib", "telnetlib",
     "turtle", "turtledemo", "curses", "lib2to3", "ensurepip",
     "venv", "distutils", "setuptools", "pkg_resources", "pip",
-    "PIL.ImageQt", "PIL.ImageTk"
+    "PIL.ImageQt"
 )
 $excludeArgs = ($excludes | ForEach-Object { "--exclude-module"; $_ })
 
