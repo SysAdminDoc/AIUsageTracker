@@ -1,0 +1,13 @@
+{
+  "desktop": "AIUsageTrackerReview-8643dc4171a84cc69bed163f3d3c1f35",
+  "captures": [
+    "01-packaged-dashboard.png",
+    "02-packaged-activity.png",
+    "03-packaged-daylight.png",
+    "04-packaged-settings.png"
+  ],
+  "assertions": [
+    "Packaged app renders all four demo states and exits cleanly",
+    "Demo creates no application-data directory"
+  ]
+}

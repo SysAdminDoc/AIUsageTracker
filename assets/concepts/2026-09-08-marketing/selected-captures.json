@@ -1,0 +1,26 @@
+{
+  "version": "0.4.1",
+  "method": "Actual installed Windows application running its offline demo on a private desktop, captured with PrintWindow; no compositing",
+  "files": [
+    {
+      "source": "assets/concepts/2026-09-08-marketing/captures/installed-r1/01-packaged-dashboard.png",
+      "selected": "assets/screenshots/dashboard.png",
+      "sha256": "0ebf9ee18322fde5214c8c7fea84a912c47f15557c58af6eefdb06128d41af3e"
+    },
+    {
+      "source": "assets/concepts/2026-09-08-marketing/captures/installed-r1/02-packaged-activity.png",
+      "selected": "assets/screenshots/activity.png",
+      "sha256": "dfa199d6288c3c7fc0f31212b8251af5775fae81c866ee5fb96ad5a56f1ad67a"
+    },
+    {
+      "source": "assets/concepts/2026-09-08-marketing/captures/installed-r1/03-packaged-daylight.png",
+      "selected": "assets/screenshots/daylight.png",
+      "sha256": "7f63ec3c5b6e350e293c835e6958be0c4755df9d75c2a5dae9a483bed65f9373"
+    },
+    {
+      "source": "assets/concepts/2026-09-08-marketing/captures/installed-r1/04-packaged-settings.png",
+      "selected": "assets/screenshots/settings.png",
+      "sha256": "f892b07596b6ec02757b2691ddcb65b72c1a850112d725c53e1fecc78f06d94d"
+    }
+  ]
+}

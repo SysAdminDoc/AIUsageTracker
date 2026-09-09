@@ -1,169 +1,41 @@
 # Changelog
 
-All notable changes to AIUsageTracker are documented here.
-
-## [0.4.0] - 2026-07-18
-
-Data intelligence and multi-account support.
+## 0.4.1 (2026-09-08)
 
 ### Added
-- **Token usage view** — scans Claude Code JSONL logs and Codex SQLite for 24h
-  token totals (input + output + cache), displayed in a dashboard card.
-- **Calendar heatmap** — 4-week usage intensity grid in the Activity view, colored
-  by daily peak utilization from persisted usage history.
-- **Multiple account support** — configure `extra_accounts` in settings to monitor
-  additional Claude/Codex subscriptions simultaneously, each with its own card.
 
-## [Unreleased]
-
-### Added
-- New AIUsageTracker brand mark: interlocking coral and cyan quota arcs around a
-  mint status node, designed to remain legible from the sidebar down to 16px.
-- Appearance choices in Settings: Midnight, Graphite, and a high-contrast
-  Daylight theme, all applied without restarting the app.
+- An offline demo with example quota windows, activity and token counts. Try it without credentials or saved settings.
+- A screenshot-led README, setup and privacy guide, and an archive of the original logo files, earlier mockups and review captures.
+- Versioned Windows installer and portable ZIP, including third-party notices. The executable now carries its product version in Windows file properties.
 
 ### Changed
-- Reimagined the desktop dashboard as a responsive usage command center with a
-  compact navigation rail, insight strip, brand-edged provider panels, clearer
-  percentage-used quota rows, square bell controls, and a summary/activity band.
-- Tightened quota rows so all primary limits and the lower health/activity band fit
-  at the default window size; historical trends remain available in Activity.
-- Replaced platform-dependent text glyphs with a consistent supersampled line-icon
-  set for navigation, insight, refresh, settings, and health controls.
-- Reworked reset activity into scan-friendly two-line entries and let additional
-  account cards wrap into balanced two-column rows.
-- Replaced the previous Catppuccin surface treatment with a higher-contrast
-  navy, coral, cyan, and mint palette and matching dark Windows title bar.
-- Replaced the old gauge icon across the window, sidebar, taskbar, tray, and
-  packaged executable with the new generated app logo.
-- Improved everyday usability with refresh-in-progress feedback, tooltips for
-  icon-only controls, single-instance Settings, keyboard shortcuts, inline poll
-  interval validation, and actionable sign-in/error guidance.
+
+- Reset-alert wording now describes polling and confirmation delays. It no longer promises instant delivery.
+- The local token summary is labeled as approximate recent usage, not an exact 24-hour report.
+- Mini mode opens with the current value and has enough room for its reset label. Activity's selected filter uses a readable theme color.
+- Builds use a maintained packaging spec, stop on failed tests and find per-user Inno Setup installations. Runtime dependencies are pinned.
+- Desktop shortcuts and startup are optional installer tasks. Uninstalling keeps app data.
 
 ### Fixed
-- The dashboard no longer overflows horizontally at its default window size.
-- Provider panels now share a consistent height when their window counts differ.
-- The four-week Activity heatmap now uses true week columns and weekday rows, with
-  readable week labels and a utilization legend.
-- Repeated live theme changes no longer race delayed Tk callbacks or destroy a
-  newly opened Settings window.
-- The Windows package no longer excludes Pillow's `ImageTk` bridge, so image-backed
-  CustomTkinter controls launch correctly in the portable EXE and installer build.
 
-## [0.3.0] - 2026-07-18
+- The Codex token reader opens its SQLite database read-only instead of changing its journal mode.
+- Background token results go through the GUI queue, avoiding Tk calls from a worker thread.
+- Frozen entry points and the packaging runtime hook call `freeze_support()` before application imports.
 
-Intelligence, integration, and reliability pass.
+## 0.4.0 (2026-07-18)
 
-### Added
-- **Dynamic tray icon** — shows highest usage % with severity-colored background
-  (green/yellow/orange/red) updating every poll cycle.
-- **Burn-rate forecast** — estimates time until limit based on rolling utilization
-  rate of change, displayed in the Highest Pressure insight.
-- **Event hooks** — configurable shell commands fired on reset and threshold events
-  with AIU_* environment variables (provider, window, utilization).
-- **Usage sparklines** — inline 120x20px trend chart in each LimitRow showing last
-  24h of utilization readings from persisted history.
-- **Historical usage persistence** — every poll appends to `usage_history.jsonl`
-  with 30-day auto-pruning on startup.
-- **Alert aggregation** — resets within 5s are grouped into one alarm/toast/banner.
-- **Data freshness indicator** — topbar shows live "Synced Xs ago" with STALE
-  warning when poll exceeds 2x the configured interval.
-- **Status export** — `current_status.json` updated each poll with all window data
-  for external agents/scripts to read.
-- **Discord/Telegram webhook** — configurable webhook URL for remote reset alerts.
-- **Autostart on login** — creates a Windows Startup folder shortcut.
-- **Source health check** — logs a warning when an endpoint stops returning
-  `resets_at` (schema drift detection).
-- **Snooze button** — suppresses alarm for snoozed windows until their next reset.
-- **Per-window warn thresholds** — override the global `warn_toast_at` per window.
-- **Custom alarm sound** — set `alarm_sound_name` to "Custom" and provide a path.
-- **Animated progress bars** — 300ms fill-in animation when usage rows render.
+Added local token summaries, the Activity heatmap and extra-account configuration. Later source work added the current quota-cycle logo, appearance themes and revised dashboard before those changes reached a downloadable release.
 
-### Changed
-- Migrated HTTP client from httpx (abandoned upstream) to httpx2 (Pydantic fork).
-- Removed plyer dependency (unmaintained); notifications use windows-toasts only.
-- Pinned Pillow >= 12.3.0 (addresses 7 CVEs from 2026).
-- Optimized PyInstaller build with aggressive module exclusions for smaller exe.
+## 0.3.0 (2026-07-18)
 
-## [0.2.0] - 2026-07-17
+Added usage history, forecast hints and configurable reset hooks. Status export and webhook code were also introduced.
 
-Premium polish pass + brand identity + selectable alarm sounds.
+## 0.2.0 (2026-07-17)
 
-### Added
-- **Provider brand tiles** — original geometric Claude (clay sunburst) and Codex
-  (OpenAI hexafoil) marks rendered at runtime with 4x supersampling; shown in the
-  provider card headers and the activity feed. New app/tray gauge mark.
-- **Selectable alarm sounds** — six synthesized, loopable tones (Chime, Alert, Pulse,
-  Bell, Siren, Arcade) chosen from a Settings dropdown, with a *Test* preview button.
+Added provider tiles, selectable alert sounds and the first packaged interface update.
 
-### Changed
-- Full premium visual pass: design-token system (spacing, typography, radius, border
-  scales), subtle card borders/elevation, brand-aligned accents, severity edge on each
-  usage bar, refined summary cards, and clearer status text.
-- Settings redesigned into Providers / Alerts / General sections with per-setting
-  hints, a scrollable body, and sticky Save / Cancel actions.
-- Microcopy polish across empty, error, and connection states.
+## 0.1.0 (2026-07-17)
 
-### Fixed
-- Usage rows no longer stretch to CTkFrame's 200px default height (severity edge given
-  a tiny requested height so rows size to their real content).
+Initial Windows dashboard, provider polling and reset detection.
 
-## [0.1.0] - 2026-07-17
-
-Initial release.
-
-### Added
-- Live monitoring of Claude (`api.anthropic.com/api/oauth/usage`) and Codex
-  (`chatgpt.com/backend-api/wham/usage`) usage windows via reused local CLI OAuth
-  tokens — no scraping, no passwords, no browser automation.
-- Timestamp-driven reset detection with a precise one-shot poll scheduled at each
-  window's `resets_at` boundary.
-- Reset alarm: looping audible tone (synthesized WAV), native Windows toast, and an
-  in-app red banner with a *Stop alarm* button.
-- Per-bar alarm toggles — enable/disable the alarm independently for each usage
-  window, persisted to settings.
-- customtkinter GUI (Catppuccin Mocha) with live usage bars, severity coloring,
-  countdowns, exact local reset times, and provider plan badges.
-- System tray integration (Show / Poll now / Settings / Quit); window hides to tray
-  on close.
-- Settings dialog: poll interval, provider toggles, alarm/toast options, start
-  minimized.
-- Headless CLI: `poll` (one-shot) and `monitor` (reset watcher).
-- Reset-event history log at `%APPDATA%\AIUsageTracker\reset_events.jsonl`.
-- Unit tests for parsing (real endpoint shapes) and reset detection.
-- PyInstaller build script producing an unsigned single-file exe.
-
-## Roadmap archive — 2026-08-10 — ROADMAP.md
-
-<details>
-<summary>Original roadmap snapshot</summary>
-
-```markdown
-# ROADMAP
-
-Single source of truth for open work. Legend: 🤖 = autonomous-codeable, 🔧 = operator/product-gated.
-
-## Considering
-
-- 🔧 **Cookie/session fallback for CLI-less users** — support users who only use the web apps (no Claude Code / Codex CLI) via a manual `sessionKey` paste or Firefox cookie import. Deliberately avoids Chrome v20 app-bound DPAPI decryption.
-- 🔧 **Gemini / other providers** — generalize the provider interface to add more quota sources.
-- 🔧 **Optional token refresh (opt-in, safe)** — refresh-and-verify-to-a-copy before writing back, to keep polling when the CLIs aren't running. Gated because refresh-token rotation risks the live CLI login.
-
-
-## Done
-
-### v0.2.0
-- Brand tiles for Claude (sunburst) and Codex (hexafoil) + new app mark.
-- Six selectable, synthesized alarm sounds with a Settings picker + Test preview.
-- Premium polish pass: design tokens, card borders/elevation, severity edges,
-  refined Settings (sections + hints), microcopy across states, row-height fix.
-
-### v0.1.0
-- Claude + Codex usage polling via local OAuth tokens.
-- Timestamp-driven reset detection + boundary-scheduled polling.
-- Audible alarm + toast + in-app banner on reset.
-- Per-bar alarm toggles.
-- customtkinter GUI, tray, settings, headless CLI, tests, PyInstaller build.
-```
-
-</details>
+The [original changelog and roadmap snapshot](assets/concepts/2026-09-08-marketing/originals/CHANGELOG.md) remain in the archive. Historical claims there haven't all been reverified.

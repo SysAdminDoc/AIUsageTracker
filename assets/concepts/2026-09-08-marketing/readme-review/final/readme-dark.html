@@ -1,0 +1,73 @@
+<!doctype html><html lang="en" class="dark"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Usage Tracker README review</title><style>:root{color-scheme:dark;--bg:#0d1117;--fg:#e6edf3;--line:#30363d;--link:#58a6ff;--sub:#161b22}html{background:var(--bg);color:var(--fg)}body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1000px;margin:auto;padding:32px 40px 64px}h1,h2,h3{line-height:1.3;font-weight:600;margin:24px 0 16px}h1{font-size:32px;border-bottom:1px solid var(--line);padding-bottom:12px}h2{font-size:24px;border-bottom:1px solid var(--line);padding-bottom:9px}h3{font-size:20px}p{margin:0 0 16px}a{color:var(--link);text-decoration:none;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;margin:0 0 24px}td,th{border:1px solid var(--line);padding:9px 13px;text-align:left}code{font:85% ui-monospace,Consolas,monospace;background:var(--sub);border-radius:5px;padding:2px 5px;overflow-wrap:anywhere}pre{background:var(--sub);padding:16px;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere}pre code{padding:0;font-size:13px}li{margin:6px 0}ul,ol{padding-left:24px}img{max-width:100%;height:auto;vertical-align:middle}.octicon{display:none}.light{color-scheme:light;--bg:#fff;--fg:#1f2328;--line:#d1d9e0;--link:#0969da;--sub:#f6f8fa}@media(max-width:600px){main{padding:22px 16px 40px}h1{font-size:28px}h2{font-size:22px}body{font-size:15px}}</style><main><h1>AIUsageTracker v0.4.1</h1>
+<p><a href="https://github.com/SysAdminDoc/AIUsageTracker/releases/tag/v0.4.1"><img src="../embedded/1580111eadd8a9f3eba9c168c7caa221c6ab8c47893ebedb05a7f9512e35fccc.svg" alt="Version" data-canonical-src="https://img.shields.io/badge/version-0.4.1-ff7867" style="max-width: 100%;"></a><br>
+<a href="LICENSE"><img src="../embedded/0e6836ee91be31d8d17d1a853514705c2933676caa60218616ce765012b9485a.svg" alt="License" data-canonical-src="https://img.shields.io/badge/license-MIT-63dfaa" style="max-width: 100%;"></a><br>
+<a href="https://github.com/SysAdminDoc/AIUsageTracker/releases"><img src="../embedded/7b423b313d87fb29e9266b6677eed5a3063d852bf1735d6ab85531b4e424ca07.svg" alt="Platform" data-canonical-src="https://img.shields.io/badge/platform-Windows_10%2F11-55d5e8" style="max-width: 100%;"></a><br>
+<a href="pyproject.toml"><img src="../embedded/2e5612c4690cd253bb7e2077be7b0c1d965cc39561530b79ee5c41e3f5a12363.svg" alt="Python" data-canonical-src="https://img.shields.io/badge/python-3.10%2B-89b4fa" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="assets/app-logo.png"><img src="../../../../app-logo.png" width="80" height="80" alt="AIUsageTracker coral and cyan quota-cycle logo" style="max-width: 100%; height: auto; max-height: 80px;"></a></p>
+<p>Keep Claude and Codex quotas in one Windows dashboard. See how much of each window you've used, check the reset countdown, and choose which resets should alert you.</p>
+<p><a href="https://github.com/SysAdminDoc/AIUsageTracker/releases/download/v0.4.1/AIUsageTracker_Setup_0.4.1.exe">Download the Windows installer</a> · <a href="https://github.com/SysAdminDoc/AIUsageTracker/releases/download/v0.4.1/AIUsageTracker-portable-v0.4.1.zip">Portable ZIP</a> · <a href="GUIDE.md">Setup and privacy guide</a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="assets/screenshots/dashboard.png"><img src="../../../../screenshots/dashboard.png" alt="AIUsageTracker Windows dashboard with separate Claude and Codex quota cards, reset countdowns and alarm controls. Offline example data." style="max-width: 100%;"></a></p>
+<p>Actual application capture using the built-in offline demo. The percentages and activity are examples, not a live account.</p>
+<h2>Start here</h2>
+<p>You'll need Windows 10 or 11, plus a signed-in <strong>Claude Code</strong> or <strong>Codex CLI</strong> installation for live usage. You can use either provider on its own. A browser login alone isn't enough.</p>
+<ol>
+<li>Install the Windows download above, or extract the portable ZIP and run <code class="notranslate">AIUsageTracker.exe</code>.</li>
+<li>Open your CLI and sign in normally. The dashboard reads its saved login; there's no password field.</li>
+<li>Select <strong>Refresh usage</strong>. Use the bell beside each quota to choose which reset alerts you want.</li>
+</ol>
+<p>The EXE and installer are <strong>unsigned</strong>. Windows or your organization's policy may warn about them. Compare the download with <a href="https://github.com/SysAdminDoc/AIUsageTracker/releases/download/v0.4.1/SHA256SUMS.txt">SHA256SUMS.txt</a>, or <a href="#run-from-source">build from source</a>. Don't disable security controls to install it.</p>
+<h3>Try it without an account</h3>
+<p>From the folder containing the executable:</p>
+<div class="highlight highlight-source-powershell"><pre class="notranslate">.\<span class="pl-c1">AIUsageTracker.exe</span> <span class="pl-k">--</span>demo</pre></div>
+<p>Demo mode uses in-memory examples. It doesn't read credentials or local conversation logs, connect to providers, save settings, play sounds, or create a tray icon. Close it and relaunch without <code class="notranslate">--demo</code> when you're ready to use your accounts.</p>
+<h2>What you can do</h2>
+<ul>
+<li><strong>Compare usage without opening two settings pages.</strong> Each provider gets its own card, with percentage-used bars and local reset times.</li>
+<li>Set reset alarms per window. Six tones, optional looping audio and Windows notifications are available in Settings.</li>
+<li><strong>Keep a small overlay nearby.</strong> Mini mode shows the highest-used window. The system tray can show a usage percentage while the main window is hidden.</li>
+<li>Look back at detected resets in Activity. A four-week heatmap shows peak usage from samples the app has collected.</li>
+<li>Choose Midnight, Graphite or Daylight. Changes apply when you save Settings.</li>
+<li>Configure extra accounts and optional event hooks in the settings file. The <a href="GUIDE.md#advanced-settings">guide</a> explains their limits and privacy implications.</li>
+</ul>
+<h3>Reset history and usage patterns</h3>
+<p><a target="_blank" rel="noopener noreferrer" href="assets/screenshots/activity.png"><img src="../../../../screenshots/activity.png" alt="Activity view with a four-week usage heatmap and recorded reset events. Offline example data." style="max-width: 100%;"></a></p>
+<p>The app records activity while it runs. It doesn't retrieve your provider's historical billing data.</p>
+<details>
+<summary>See Daylight and Settings</summary>
+<p><a target="_blank" rel="noopener noreferrer" href="assets/screenshots/daylight.png"><img src="../../../../screenshots/daylight.png" alt="The same dashboard in its Daylight theme, using offline example data." style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="assets/screenshots/settings.png"><img src="../../../../screenshots/settings.png" alt="Settings for appearance, provider selection and reset alerts. Sound playback is disabled in the offline demo." style="max-width: 100%;"></a></p>
+</details>
+<h2>How alerts work</h2>
+<p>Regular background polling defaults to <strong>180 seconds</strong>. Known reset times can schedule an earlier check, but that check still respects the polling floor. A reset must be confirmed in returned data. Nearby reset events are grouped for five seconds before an alert appears.</p>
+<p>That means alerts aren't guaranteed at the exact countdown boundary. Sleep, expired logins, network errors and provider rate limits can delay them. Leave the app running and keep the relevant CLI signed in.</p>
+<h2>Your data</h2>
+<p>Live mode reads OAuth access tokens from the official CLI files and sends them to the matching provider's usage endpoint. It doesn't refresh tokens or rewrite the credential files.</p>
+<p>The dashboard also reads local Claude Code session logs and the Codex log database for an <strong>approximate recent-token summary</strong>. This isn't a billing report or a strict 24-hour total. See <a href="GUIDE.md#data-and-privacy">what gets read and saved</a>.</p>
+<p>Settings, usage samples and reset history stay in <code class="notranslate">%APPDATA%\AIUsageTracker</code>. Optional webhooks send reset messages to a destination you configure; event hooks run commands you supply. Both are off by default.</p>
+<p>This is an unofficial project, not affiliated with Anthropic or OpenAI. Its usage endpoints are undocumented and may change.</p>
+<h2>Run from source</h2>
+<p>Python 3.10 or newer is required. Release builds are tested with Python 3.13 on Windows 11.</p>
+<div class="highlight highlight-source-powershell"><pre class="notranslate">git clone https:<span class="pl-k">//</span><span class="pl-c1">github.com</span><span class="pl-k">/</span>SysAdminDoc<span class="pl-k">/</span>AIUsageTracker.git
+cd AIUsageTracker
+python <span class="pl-k">-</span>m venv .venv
+.\.venv\Scripts\<span class="pl-c1">python.exe</span> <span class="pl-k">-</span>m pip install <span class="pl-k">-</span>r requirements.txt
+.\.venv\Scripts\<span class="pl-c1">python.exe</span> run.py <span class="pl-k">--</span>demo</pre></div>
+<p>Omit <code class="notranslate">--demo</code> to use your saved CLI logins. A hash-pinned Windows/Python 3.13 dependency set is available in <a href="requirements-lock.txt">requirements-lock.txt</a>.</p>
+<p>For terminal output, run one of these from the source checkout:</p>
+<div class="highlight highlight-source-powershell"><pre class="notranslate">.\.venv\Scripts\<span class="pl-c1">python.exe</span> <span class="pl-k">-</span>m aiusagetracker.cli poll
+.\.venv\Scripts\<span class="pl-c1">python.exe</span> <span class="pl-k">-</span>m aiusagetracker.cli monitor</pre></div>
+<h3>Build and test</h3>
+<p>Install <a href="https://jrsoftware.org/isinfo.php" rel="nofollow">Inno Setup 6</a>, then:</p>
+<div class="highlight highlight-source-powershell"><pre class="notranslate">.\.venv\Scripts\<span class="pl-c1">python.exe</span> <span class="pl-k">-</span>m pip install <span class="pl-k">-</span>r requirements<span class="pl-k">-</span>dev.txt
+.\.venv\Scripts\<span class="pl-c1">python.exe</span> <span class="pl-k">-</span>m pytest <span class="pl-k">-</span>q
+.\build.ps1</pre></div>
+<p>The build stops if tests fail. It produces a portable EXE, a portable ZIP with licenses, and a per-user installer in <code class="notranslate">dist</code>. See <a href="docs/VERIFICATION.md">release verification</a> for what was exercised and what still requires a live account.</p>
+<h2>Help and project files</h2>
+<ul>
+<li><a href="GUIDE.md">Troubleshooting and advanced settings</a></li>
+<li><a href="CHANGELOG.md">Changelog</a> and <a href="ROADMAP.md">remaining work</a></li>
+<li><a href="assets/concepts/2026-09-08-marketing/README.md">Original artwork and screenshot review archive</a></li>
+<li><a href="https://github.com/SysAdminDoc/AIUsageTracker/issues">Report a problem</a>. Include your version and the error text, but never attach credential files.</li>
+</ul>
+<p>Looking for a browser extension instead? <a href="https://github.com/SysAdminDoc/AI-Usage_Tracker">AI-Usage_Tracker</a> is a separate project.</p>
+<p>MIT. See <a href="LICENSE">LICENSE</a> and <a href="THIRD-PARTY-NOTICES.txt">third-party notices</a>.</p></main></html>

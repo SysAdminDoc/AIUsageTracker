@@ -425,7 +425,8 @@ class MiniWidget(ctk.CTkToplevel):
         self.attributes("-topmost", True)
         self.attributes("-alpha", 0.92)
         self.configure(fg_color=MOCHA["crust"])
-        self.geometry("220x70+1680+20")
+        x = max(20, self.winfo_screenwidth() - 340)
+        self.geometry(f"300x92+{x}+20")
         self._drag_x = 0
         self._drag_y = 0
 
@@ -462,13 +463,15 @@ class MiniWidget(ctk.CTkToplevel):
 # Main application
 # ---------------------------------------------------------------------------
 class App(ctk.CTk):
-    def __init__(self):
-        settings = config.load_settings()
+    def __init__(self, *, demo=False, demo_theme="midnight"):
+        from ..demo import DemoSession, SilentAlarm
+        self.demo = DemoSession(demo_theme) if demo else None
+        settings = self.demo.settings if self.demo else config.load_settings()
         settings["theme"] = ui_theme.apply_theme(settings.get("theme"))
         ctk.set_appearance_mode(ui_theme.appearance_for(settings["theme"]))
         super().__init__()
         self.settings = settings
-        self.title(f"AIUsageTracker v{__version__}")
+        self.title(f"AIUsageTracker v{__version__}" + (" · Example data" if self.demo else ""))
         self.geometry("1360x840")
         self.minsize(1060, 720)
         self.configure(fg_color=MOCHA["base"])
@@ -481,7 +484,7 @@ class App(ctk.CTk):
 
         self._queue: "queue.Queue" = queue.Queue()
         self._rows: dict[str, LimitRow] = {}
-        self._alarm = Alarm()
+        self._alarm = SilentAlarm() if self.demo else Alarm()
         self._tray = None
         self._burn_samples: dict[str, deque] = {}  # key -> deque of (timestamp, pct)
         self._pending_resets: list[ResetEvent] = []
@@ -505,7 +508,7 @@ class App(ctk.CTk):
         self._build_sidebar()
         self._build_main()
 
-        self.poller = Poller(self.settings)
+        self.poller = self.demo if self.demo else Poller(self.settings)
         self.poller.on_snapshot = lambda s: self._queue.put(("snapshot", s))
         self.poller.on_reset = lambda e: self._queue.put(("reset", e))
         self.poller.on_warn = lambda w: self._queue.put(("warn", w))
@@ -521,7 +524,8 @@ class App(ctk.CTk):
         self._chrome_after_id = self.after(80, self._apply_windows_chrome)
         self._drain_after_id = self.after(150, self._drain_queue)
         self._tick_after_id = self.after(1000, self._tick)
-        self._start_tray()
+        if not self.demo:
+            self._start_tray()
 
     def _apply_windows_chrome(self):
         """Ask DWM for caption colors that match the active theme."""
@@ -616,7 +620,7 @@ class App(ctk.CTk):
         self.view_title = ctk.CTkLabel(titles, text="Usage overview", font=(FONT, FS_H1, "bold"),
                                        text_color=MOCHA["text"], anchor="w")
         self.view_title.grid(row=1, column=0, sticky="w", pady=(0, 2))
-        self.view_sub = ctk.CTkLabel(titles, text="Monitor every limit. Never miss a reset.",
+        self.view_sub = ctk.CTkLabel(titles, text="Check usage windows and upcoming resets.",
                                      font=(FONT, FS_BODY), text_color=MOCHA["subtext0"], anchor="w")
         self.view_sub.grid(row=2, column=0, sticky="w")
         self.synced_label = ctk.CTkLabel(top, text="", font=(FONT, FS_SMALL),
@@ -741,7 +745,7 @@ class App(ctk.CTk):
                                    border_width=1, border_color=MOCHA["surface1"])
         token_card.grid(row=3, column=0, sticky="ew", padx=SP_SM, pady=(0, SP_SM))
         token_card.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(token_card, text="Token usage · 24h", font=(FONT, FS_TITLE, "bold"),
+        ctk.CTkLabel(token_card, text="Recent local tokens", font=(FONT, FS_TITLE, "bold"),
                      text_color=MOCHA["text"], anchor="w").grid(
                          row=0, column=0, sticky="w", padx=(SP_LG, SP_MD), pady=SP_MD)
         self._token_total_label = ctk.CTkLabel(token_card, text="--",
@@ -759,10 +763,13 @@ class App(ctk.CTk):
 
     def _refresh_token_stats(self):
         """Scan token usage files in a thread to avoid blocking GUI."""
+        if self.demo:
+            self._display_token_stats(self.demo.stats)
+            return
         import threading
         def _scan():
             stats = token_stats.collect(since_hours=24.0)
-            self.after(0, self._display_token_stats, stats)
+            self._queue.put(("tokens", stats))
         threading.Thread(target=_scan, daemon=True).start()
 
     def _display_token_stats(self, stats):
@@ -786,7 +793,7 @@ class App(ctk.CTk):
             filter_bar, values=["All", "Claude", "Codex"],
             variable=self._activity_filter, font=(FONT, FS_SMALL), height=34,
             corner_radius=R_SM, border_width=1, fg_color=MOCHA["surface0"],
-            selected_color=MOCHA["mauve"], selected_hover_color=MOCHA["lavender"],
+            selected_color=MOCHA["surface2"], selected_hover_color=MOCHA["surface2"],
             unselected_color=MOCHA["surface0"], unselected_hover_color=MOCHA["surface1"],
             text_color=MOCHA["text"], command=lambda _: self._render_activity(),
         ).grid(row=0, column=1, sticky="w")
@@ -815,7 +822,7 @@ class App(ctk.CTk):
         if key == "dashboard":
             self.eyebrow.grid()
             self.view_title.configure(text="Usage overview")
-            self.view_sub.configure(text="Monitor every limit. Never miss a reset.")
+            self.view_sub.configure(text="Check usage windows and upcoming resets.")
             self.dash.grid(row=0, column=0, sticky="nsew")
         else:
             self.eyebrow.grid_remove()
@@ -823,6 +830,8 @@ class App(ctk.CTk):
             self.view_sub.configure(text="Every usage reset AIUsageTracker has detected.")
             self.activity.grid(row=0, column=0, sticky="nsew")
             self._render_activity()
+        if self.demo:
+            self.view_sub.configure(text="Example data. No account access, network requests or saved changes.")
         self._highlight_nav()
 
     # -- activity rendering --------------------------------------------------
@@ -830,7 +839,7 @@ class App(ctk.CTk):
         for child in parent.winfo_children():
             child.destroy()
         if not events:
-            ctk.CTkLabel(parent, text="No resets yet - you'll be alarmed the moment a window rolls over.",
+            ctk.CTkLabel(parent, text="No resets recorded yet. Alerts appear after a reset is detected.",
                          font=(FONT, FS_SMALL), text_color=MOCHA["overlay0"], anchor="w").grid(sticky="ew", padx=SP_SM, pady=pad)
             return
         for i, ev in enumerate(reversed(events[-limit:])):
@@ -862,10 +871,10 @@ class App(ctk.CTk):
                          text_color=MOCHA["subtext0"], anchor="e").pack(anchor="e")
 
     def _render_recent(self):
-        self._event_rows(self.recent_list, load_events(200), 2)
+        self._event_rows(self.recent_list, self.demo.events if self.demo else load_events(200), 2)
 
     def _render_activity(self):
-        events = load_events(200)
+        events = self.demo.events if self.demo else load_events(200)
         filt = self._activity_filter.get().lower()
         if filt != "all":
             events = [e for e in events if e.get("provider", "") == filt]
@@ -876,7 +885,7 @@ class App(ctk.CTk):
         """Draw a 7-row x 4-week calendar heatmap from usage history."""
         canvas = self._heatmap_canvas
         canvas.delete("all")
-        history = load_history(since_hours=28 * 24)
+        history = self.demo.history if self.demo else load_history(since_hours=28 * 24)
 
         from datetime import date, timedelta
 
@@ -956,6 +965,8 @@ class App(ctk.CTk):
                     self._on_reset(payload)
                 elif kind == "warn":
                     self._on_warn(payload)
+                elif kind == "tokens":
+                    self._display_token_stats(payload)
         except queue.Empty:
             pass
         self._drain_after_id = self.after(200, self._drain_queue)
@@ -1035,6 +1046,9 @@ class App(ctk.CTk):
             latest = max(times).astimezone()
             self.conn_detail.configure(text=f"Synced {latest:%I:%M:%S %p}")
         self._render_recent()
+        if self.demo:
+            self.conn_text.configure(text="Example data", text_color=MOCHA["blue"])
+            self.conn_detail.configure(text="Offline preview")
 
     def _burn_eta(self, key: str) -> str:
         """Estimate time until 100% based on recent utilization rate of change."""
@@ -1110,10 +1124,10 @@ class App(ctk.CTk):
             self._alarm.start(loop=self.settings.get("alarm_loop", True),
                               sound=self.settings.get("alarm_sound_name", DEFAULT_SOUND),
                               custom_path=self.settings.get("custom_alarm_path", ""))
-        if self.settings.get("toast", True):
+        if not self.demo and self.settings.get("toast", True):
             notify("AI Usage Reset", f"{labels} has reset.")
         webhook_url = self.settings.get("webhook_url", "")
-        if webhook_url:
+        if webhook_url and not self.demo:
             send_webhook(webhook_url, "AI Usage Reset", f"{labels} has reset.")
         try:
             self.deiconify(); self.lift(); self.focus_force()
@@ -1121,11 +1135,14 @@ class App(ctk.CTk):
             pass
 
     def _on_warn(self, w: LimitWindow):
-        if self.settings.get("toast", True):
+        if not self.demo and self.settings.get("toast", True):
             notify("Usage nearing limit",
                    f"{PROVIDER_TITLES.get(w.provider, w.provider)} {w.label} at {w.utilization:.0f}%")
 
     def _update_freshness(self):
+        if self.demo:
+            self.synced_label.configure(text="Offline demo", text_color=MOCHA["blue"])
+            return
         if self._last_sync_ts is None:
             return
         import time
@@ -1198,7 +1215,8 @@ class App(ctk.CTk):
 
     def _set_window_alarm(self, key: str, on: bool):
         self.settings.setdefault("window_alarms", {})[key] = bool(on)
-        config.save_settings(self.settings)
+        if not self.demo:
+            config.save_settings(self.settings)
 
     def open_settings(self):
         try:
@@ -1217,7 +1235,8 @@ class App(ctk.CTk):
         previous_theme = ui_theme.normalize_theme(self.settings.get("theme"))
         new["theme"] = ui_theme.normalize_theme(new.get("theme", previous_theme))
         self.settings.update(new)
-        config.save_settings(self.settings)
+        if not self.demo:
+            config.save_settings(self.settings)
         self.poller.settings = self.settings
         self.poller.poll_now()
         if new["theme"] != previous_theme:
@@ -1289,6 +1308,7 @@ class App(ctk.CTk):
             self.deiconify()
         else:
             self._mini = MiniWidget(self)
+            self._recompute_summary()
             self.withdraw()
 
     def _show_window(self):
@@ -1402,7 +1422,7 @@ class SettingsDialog(ctk.CTkToplevel):
 
         # Alerts ----------------------------------------------------------
         card = self._section(wrap, "Alerts")
-        self._check(card, "Audible alarm on reset", self.var_alarm, "Play a sound the moment a tracked window resets.")
+        self._check(card, "Audible alarm on reset", self.var_alarm, "Play a sound after a tracked reset is detected.")
         row = ctk.CTkFrame(card, fg_color="transparent")
         row.pack(anchor="w", fill="x", padx=SP_MD, pady=(SP_XS, 2))
         ctk.CTkLabel(row, text="Alarm sound", font=(FONT, FS_BODY), text_color=MOCHA["text"]).pack(side="left")
@@ -1414,8 +1434,9 @@ class SettingsDialog(ctk.CTkToplevel):
         self.sound_menu.pack(side="left", padx=SP_SM)
         ctk.CTkButton(row, text="▶ Test", width=64, height=28, corner_radius=R_SM,
                       fg_color=MOCHA["surface1"], hover_color=MOCHA["surface2"], text_color=MOCHA["text"],
-                      font=(FONT, FS_SMALL), command=lambda: preview(self.sound_menu.get())).pack(side="left")
-        ctk.CTkLabel(card, text="Pick a tone, then Test to hear it.", font=(FONT, FS_TINY),
+                      font=(FONT, FS_SMALL), state="disabled" if app.demo else "normal",
+                      command=lambda: preview(self.sound_menu.get()) if not app.demo else None).pack(side="left")
+        ctk.CTkLabel(card, text="Sound is disabled in the offline demo." if app.demo else "Pick a tone, then Test to hear it.", font=(FONT, FS_TINY),
                      text_color=MOCHA["subtext0"], anchor="w").pack(anchor="w", padx=SP_MD, pady=(0, SP_XS))
         self._check(card, "Loop until acknowledged", self.var_loop, "Repeat the alarm until you click Stop alarm.")
         self._check(card, "Toast notifications", self.var_toast, "Also show a native Windows toast on reset.")
@@ -1513,8 +1534,20 @@ class SettingsDialog(ctk.CTkToplevel):
         app.apply_settings(new_settings)
 
 
-def main():
-    app = App()
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description="AIUsageTracker Windows dashboard")
+    parser.add_argument("--demo", action="store_true", help="Use offline example data without saving changes")
+    parser.add_argument("--demo-theme", choices=sorted(config.THEME_KEYS), default="midnight")
+    parser.add_argument("--demo-view", choices=["dashboard", "activity", "settings"], default="dashboard")
+    args = parser.parse_args(argv)
+    if not args.demo and (args.demo_theme != "midnight" or args.demo_view != "dashboard"):
+        parser.error("Demo appearance options require --demo")
+    app = App(demo=args.demo, demo_theme=args.demo_theme)
+    if args.demo_view == "activity":
+        app.show_view("activity")
+    elif args.demo_view == "settings":
+        app.after(600, app.open_settings)
     app.run()
 
 

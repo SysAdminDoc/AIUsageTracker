@@ -1,15 +1,15 @@
-# Roadmap Blocked
+# Parked product decisions
 
-Items here require external input before implementation.
+These aren't promised features.
 
-## Roadmap cleanup — 2026-08-10 — ROADMAP.md
+## Accounts without a CLI
 
-**Blocked on:** The source roadmap marked this work as parked, optional, or dependent on external input.
+Browser-session import would need an explicit, safe credential-handling design. The current app requires a saved Claude Code or Codex CLI login.
 
-Blocked items moved from the actionable roadmap:
+## Additional providers
 
-- 🔧 **Cookie/session fallback for CLI-less users** — support users who only use the web apps (no Claude Code / Codex CLI) via a manual `sessionKey` paste or Firefox cookie import. Deliberately avoids Chrome v20 app-bound DPAPI decryption.
+Gemini and other providers need a documented data source and maintained parser before being offered as supported integrations.
 
-- 🔧 **Gemini / other providers** — generalize the provider interface to add more quota sources.
+## Token refresh
 
-- 🔧 **Optional token refresh (opt-in, safe)** — refresh-and-verify-to-a-copy before writing back, to keep polling when the CLIs aren't running. Gated because refresh-token rotation risks the live CLI login.
+Automatic refresh remains deliberately disabled. Rotating a refresh token can invalidate a CLI's active login. Don't add write-back without a tested isolation and recovery plan.

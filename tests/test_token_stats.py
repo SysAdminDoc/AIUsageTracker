@@ -48,3 +48,25 @@ def test_scan_claude_parses_usage_from_jsonl(tmp_path):
     assert totals.cache_read_tokens == 1000
     assert totals.cache_write_tokens == 600
     assert totals.sessions == 1
+
+
+def test_codex_scan_keeps_database_read_only(tmp_path, monkeypatch):
+    import sqlite3
+    import time
+
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    db_path = tmp_path / ".codex" / "logs_2.sqlite"
+    db_path.parent.mkdir()
+    with sqlite3.connect(db_path) as db:
+        db.execute("CREATE TABLE logs (ts INTEGER, feedback_log_body TEXT)")
+        db.execute("INSERT INTO logs VALUES (?, ?)", (int(time.time()), json.dumps({
+            "type": "response.completed", "response": {
+                "id": "example-response", "usage": {"input_tokens": 10, "output_tokens": 4}
+            }
+        })))
+    before = db_path.read_bytes()
+    totals = _scan_codex()
+    assert totals.total == 14
+    assert db_path.read_bytes() == before
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("PRAGMA journal_mode").fetchone()[0] == "delete"

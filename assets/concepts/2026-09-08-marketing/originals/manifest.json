@@ -1,0 +1,89 @@
+{
+  "baseline": "8fd2831",
+  "files": [
+    {
+      "source": "README.md",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/README.md",
+      "bytes": 6396,
+      "sha256": "5beef103d5ec7498485c0f35064198c038d9322339eb624631e89e3900139771"
+    },
+    {
+      "source": "CHANGELOG.md",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/CHANGELOG.md",
+      "bytes": 8757,
+      "sha256": "f1a7d5cd09b0269d091449f34734835bab9cab8f191ff5ba5a320ecce57eafaa"
+    },
+    {
+      "source": "RESEARCH.md",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/RESEARCH.md",
+      "bytes": 10214,
+      "sha256": "9d7a5fc0c825f03732f6fdf48ac7a645c143453cbb9ae6abe3c9d722f624c8ff"
+    },
+    {
+      "source": "ROADMAP.md",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/ROADMAP.md",
+      "bytes": 190,
+      "sha256": "dc2cd379681b36838ce226d6f43c487bed5a58cf977ab6cf9b7134bd61ea4015"
+    },
+    {
+      "source": "Roadmap_Blocked.md",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/Roadmap_Blocked.md",
+      "bytes": 857,
+      "sha256": "3b837b0e564e64d03528251b8c1ac33d90a9ff279678efa28add810d91e37d4b"
+    },
+    {
+      "source": "pyproject.toml",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/pyproject.toml",
+      "bytes": 801,
+      "sha256": "f59da78ba80be8eb1bd63bee1ead4b23c862bf7e60cda3193c2069d3dfb0ec44"
+    },
+    {
+      "source": "build.ps1",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/build.ps1",
+      "bytes": 2949,
+      "sha256": "42679523fa824a34351e2633846babf290b0730eef8f1831a7acddf31fd0e01e"
+    },
+    {
+      "source": "installer.iss",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/installer.iss",
+      "bytes": 2106,
+      "sha256": "9eee734828204ab585e9cc02ccac28e2044e1ff9e12798b299af2b37224786ce"
+    },
+    {
+      "source": "AIUsageTracker.spec",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/AIUsageTracker.spec",
+      "bytes": 1461,
+      "sha256": "b0ae409b0ba882ef2375e027f3ad44aaa36879cde24407e4265c1a003630002a"
+    },
+    {
+      "source": "assets/app-logo.png",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/assets/app-logo.png",
+      "bytes": 951144,
+      "sha256": "333f724eb7db6cb7f4e13669533ed8795bd2760ab00ac0d05a63562b06257127"
+    },
+    {
+      "source": "assets/app-logo.ico",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/assets/app-logo.ico",
+      "bytes": 90967,
+      "sha256": "b7ae58eec92c646a52fcf30f0ad3b6f4506cae81740a6b46ba019cee3e46feda"
+    },
+    {
+      "source": "assets/design-concept.png",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/assets/design-concept.png",
+      "bytes": 1215143,
+      "sha256": "bdbc8a2c424a854ceb1d16b505c6f5f65073bfdf2dda091b727d4e3bca039404"
+    },
+    {
+      "source": "assets/redesign-mockup-v2.png",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/assets/redesign-mockup-v2.png",
+      "bytes": 1202263,
+      "sha256": "ff5bc6abf509a55aa4e1b068990d10b87a3a3f67e12744d0b0f3a103098250ca"
+    },
+    {
+      "source": "assets/redesign-implemented.png",
+      "archive": "assets/concepts/2026-09-08-marketing/originals/assets/redesign-implemented.png",
+      "bytes": 108324,
+      "sha256": "8fb35359882ecb4deab425dd5e9af7703d12900b7788756007f483c4d3c5aabb"
+    }
+  ]
+}

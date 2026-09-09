@@ -1,0 +1,4 @@
+# Keep archived originals and upstream license texts byte-exact.
+assets/concepts/**/originals/** -text -diff
+THIRD-PARTY-NOTICES.txt -text -diff
+assets/licenses/*LICENSE.txt -text -diff

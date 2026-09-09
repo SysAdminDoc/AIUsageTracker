@@ -33,10 +33,13 @@ snapshot_*.json
 usage_history.jsonl
 current_status.json
 
-# PyInstaller generated spec
-*.spec
+# The maintained PyInstaller spec is version controlled.
 
 # Screenshots may contain real usage data - keep them out of the repo
 assets/*.png
 # The generated brand mark is an application asset, not a usage screenshot.
 !assets/app-logo.png
+
+# Reviewed example-data captures and original concepts are kept intentionally.
+!assets/concepts/**
+!assets/screenshots/**

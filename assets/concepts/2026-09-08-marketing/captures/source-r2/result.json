@@ -1,0 +1,22 @@
+{
+  "desktop": "AIUsageTrackerReview-f21a9729fa8c48768baa534377ef9b20",
+  "captures": [
+    "01-dashboard.png",
+    "02-activity.png",
+    "03-settings.png",
+    "04-daylight.png",
+    "05-mini.png",
+    "06-reset-alert.png"
+  ],
+  "assertions": [
+    "Four sample quota windows render",
+    "Alarm toggle works in memory",
+    "Refresh callback completes",
+    "Activity provider filter returns two example events",
+    "Invalid poll interval rejected",
+    "Settings save applies Daylight without disk writes",
+    "Mini widget shows highest pressure",
+    "Aggregated reset banner and acknowledgement work without sound or network"
+  ],
+  "callbackErrors": []
+}

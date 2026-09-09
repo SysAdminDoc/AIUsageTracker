@@ -123,9 +123,9 @@ def _scan_codex(since_hours: float = 24.0) -> TokenTotals:
 
     cutoff_ts = int(time.time() - since_hours * 3600)
 
+    db = None
     try:
-        db = sqlite3.connect(str(db_path), timeout=5)
-        db.execute("PRAGMA journal_mode=WAL")
+        db = sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
         cur = db.cursor()
         cur.execute(
             "SELECT feedback_log_body FROM logs "
@@ -157,9 +157,11 @@ def _scan_codex(since_hours: float = 24.0) -> TokenTotals:
             except (json.JSONDecodeError, TypeError, KeyError):
                 pass
         totals.sessions = len(sessions)
-        db.close()
     except (sqlite3.Error, OSError):
         pass
+    finally:
+        if db is not None:
+            db.close()
 
     return totals
 
